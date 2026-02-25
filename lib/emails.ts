@@ -37,7 +37,7 @@ function wrapper(content: string) {
 }
 
 function btn(text: string, href: string) {
-  return `<a href="${href}" style="display:inline-block;background:#4a5e35;color:#ffffff;font-size:14px;font-weight:600;padding:12px 28px;border-radius:6px;text-decoration:none;margin-top:24px">${text}</a>`;
+  return `<a href="${href}" style="display:inline-block;background:#1a2744;color:#ffffff;font-size:14px;font-weight:600;padding:12px 28px;border-radius:6px;text-decoration:none;margin-top:24px">${text}</a>`;
 }
 
 export function welcomeEmail(firstName: string) {

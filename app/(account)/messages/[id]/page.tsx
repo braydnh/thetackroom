@@ -162,11 +162,22 @@ export default function MessageThreadPage() {
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
-    if (!body.trim() || !meta) return;
-    setSending(true);
+    if (!body.trim() || !meta || sending) return;
 
     const text = body.trim();
     setBody("");
+    setSending(true);
+
+    // Optimistically add the message immediately so the UI feels instant
+    const tempId = `temp-${Date.now()}`;
+    const optimistic: Message = {
+      id: tempId,
+      body: text,
+      sender_id: meta.current_user_id,
+      created_at: new Date().toISOString(),
+      read_at: null,
+    };
+    setMessages((prev) => [...prev, optimistic]);
 
     const res = await fetch("/api/messages/send", {
       method: "POST",
@@ -175,12 +186,20 @@ export default function MessageThreadPage() {
     });
 
     if (!res.ok) {
+      // Roll back the optimistic message
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setBody(text);
       const data = await res.json().catch(() => ({}));
       if (data.code === "CONTACT_INFO_DETECTED") {
         toast.error(data.error ?? "Contact details are not permitted in messages.");
       } else {
         toast.error("Failed to send message. Please try again.");
+      }
+    } else {
+      // Swap the temp ID for the real DB ID so the Realtime dedup works correctly
+      const data = await res.json().catch(() => ({}));
+      if (data.id) {
+        setMessages((prev) => prev.map((m) => m.id === tempId ? { ...m, id: data.id } : m));
       }
     }
 
