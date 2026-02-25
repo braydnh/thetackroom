@@ -289,12 +289,10 @@ export default async function HomePage() {
             </Button>
           </div>
 
-          {/* Slideshow */}
-          {ambassadorListings.length > 0 && (
-            <div className="pb-8 px-0">
-              <AmbassadorSlideshow listings={ambassadorListings} />
-            </div>
-          )}
+          {/* Slideshow — shows placeholders when no ambassador listings yet */}
+          <div className="pb-8">
+            <AmbassadorSlideshow listings={ambassadorListings} />
+          </div>
         </div>
       </section>
     </>
