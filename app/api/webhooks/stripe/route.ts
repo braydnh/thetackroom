@@ -10,6 +10,9 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendEmail } from "@/lib/resend";
+import { newOrderEmail } from "@/lib/emails";
+import { formatAUD } from "@/lib/utils/currency";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01-28.clover" });
 
@@ -70,6 +73,8 @@ export async function POST(req: Request) {
 
     // ── Order payment captured ──
     if (pi.metadata.type === "order_payment" && pi.metadata.order_id) {
+      const orderId = pi.metadata.order_id;
+
       await supabase
         .from("orders")
         .update({
@@ -77,7 +82,7 @@ export async function POST(req: Request) {
           stripe_payment_intent_id: pi.id,
           stripe_charge_id: pi.latest_charge as string | null,
         })
-        .eq("id", pi.metadata.order_id);
+        .eq("id", orderId);
 
       // Mark listing as reserved
       if (pi.metadata.listing_id) {
@@ -85,6 +90,42 @@ export async function POST(req: Request) {
           .from("listings")
           .update({ status: "reserved" })
           .eq("id", pi.metadata.listing_id);
+      }
+
+      // Email seller about the new order
+      try {
+        const { data: order } = await supabase
+          .from("orders")
+          .select("seller_id, buyer_id, subtotal, listing_id, listings(title)")
+          .eq("id", orderId)
+          .single();
+
+        if (order) {
+          const [{ data: sellerProfile }, sellerAuth, { data: buyerProfile }] = await Promise.all([
+            supabase.from("profiles").select("username, display_name").eq("id", order.seller_id).single(),
+            supabase.auth.admin.getUserById(order.seller_id),
+            supabase.from("profiles").select("username").eq("id", order.buyer_id).single(),
+          ]);
+
+          const sellerEmail = (sellerAuth as any).data?.user?.email;
+          const listingTitle = (order.listings as any)?.title ?? "Your listing";
+
+          if (sellerEmail) {
+            await sendEmail({
+              to: sellerEmail,
+              subject: `You've made a sale — ${listingTitle}`,
+              html: newOrderEmail({
+                sellerName: sellerProfile?.display_name ?? sellerProfile?.username ?? "there",
+                buyerName: buyerProfile?.username ?? "A buyer",
+                listingTitle,
+                amount: formatAUD(order.subtotal),
+                orderId,
+              }),
+            });
+          }
+        }
+      } catch {
+        // Email failure should not affect order processing
       }
     }
   }

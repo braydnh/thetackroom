@@ -168,26 +168,20 @@ export default function MessageThreadPage() {
     const text = body.trim();
     setBody("");
 
-    const { error } = await supabase.from("messages").insert({
-      conversation_id: id,
-      sender_id: meta.current_user_id,
-      body: text,
+    const res = await fetch("/api/messages/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ conversation_id: id, body: text }),
     });
 
-    if (error) {
+    if (!res.ok) {
       setBody(text);
-      const msg = error.message ?? "";
-      if (msg.includes("CONTACT_INFO_DETECTED:")) {
-        const reason = msg.split("CONTACT_INFO_DETECTED:")[1]?.trim() ?? "Contact details are not permitted in messages.";
-        toast.error(reason);
+      const data = await res.json().catch(() => ({}));
+      if (data.code === "CONTACT_INFO_DETECTED") {
+        toast.error(data.error ?? "Contact details are not permitted in messages.");
       } else {
         toast.error("Failed to send message. Please try again.");
       }
-    } else {
-      await supabase
-        .from("conversations")
-        .update({ last_message_at: new Date().toISOString() })
-        .eq("id", id);
     }
 
     setSending(false);

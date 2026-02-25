@@ -197,7 +197,7 @@ export default function NewListingForm() {
       if (activateError) throw new Error(activateError.message);
 
       toast.success("Listing published!");
-      router.push(`/listings/${listing.id}`);
+      router.push(`/selling/boost/${listing.id}?new=true`);
     } catch (err: any) {
       toast.error(err.message ?? "Failed to publish. Please try again.");
     } finally {
@@ -458,13 +458,13 @@ export default function NewListingForm() {
               <button
                 type="button"
                 onClick={() => set("allowsShipping", !form.allowsShipping)}
-                className={`relative h-6 w-11 rounded-full transition-colors ${
+                className={`relative h-6 w-11 rounded-full transition-colors overflow-hidden ${
                   form.allowsShipping ? "bg-olive" : "bg-muted"
                 }`}
               >
                 <span
-                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                    form.allowsShipping ? "translate-x-5" : "translate-x-0.5"
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                    form.allowsShipping ? "translate-x-[22px]" : "translate-x-0.5"
                   }`}
                 />
               </button>
@@ -520,13 +520,13 @@ export default function NewListingForm() {
               <button
                 type="button"
                 onClick={() => set("allowsPickup", !form.allowsPickup)}
-                className={`relative h-6 w-11 rounded-full transition-colors ${
+                className={`relative h-6 w-11 rounded-full transition-colors overflow-hidden ${
                   form.allowsPickup ? "bg-olive" : "bg-muted"
                 }`}
               >
                 <span
-                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                    form.allowsPickup ? "translate-x-5" : "translate-x-0.5"
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                    form.allowsPickup ? "translate-x-[22px]" : "translate-x-0.5"
                   }`}
                 />
               </button>

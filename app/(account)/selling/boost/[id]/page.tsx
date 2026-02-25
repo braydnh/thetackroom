@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { formatAUD } from "@/lib/utils/currency";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import { Loader2, Zap, Home, Search, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import Link from "next/link";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -31,6 +32,8 @@ const SLOTS = [
 
 export default function BoostListingPage() {
   const { id: listingId } = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
+  const isNew = searchParams.get("new") === "true";
   const [slot, setSlot] = useState<"homepage" | "search_top">("homepage");
   const [duration, setDuration] = useState<7 | 14>(7);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -77,17 +80,27 @@ export default function BoostListingPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <div className="flex items-center gap-2 mb-2">
-        <Zap className="h-5 w-5 text-olive" />
-        <h1
-          className="text-2xl font-bold text-navy"
-          style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Zap className="h-5 w-5 text-olive" />
+          <h1
+            className="text-2xl font-bold text-navy"
+            style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
+          >
+            {isNew ? "Boost Your New Listing" : "Boost Your Listing"}
+          </h1>
+        </div>
+        <Link
+          href={`/listings/${listingId}`}
+          className="text-sm text-muted-foreground hover:text-navy underline underline-offset-2"
         >
-          Boost Your Listing
-        </h1>
+          {isNew ? "Skip for now" : "View listing"}
+        </Link>
       </div>
       <p className="text-sm text-muted-foreground mb-8">
-        Get more eyes on your item with a paid feature placement.
+        {isNew
+          ? "Your listing is live! Get more eyes on it with a paid feature placement."
+          : "Get more eyes on your item with a paid feature placement."}
       </p>
 
       {/* Slot selection */}

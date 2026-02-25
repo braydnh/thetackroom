@@ -3,8 +3,8 @@ import { Resend } from "resend";
 export const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Update this once your domain is verified in Resend
-export const FROM_EMAIL = "The Tack Room <hello@thetackroom.com.au>";
-export const REPLY_TO = "hello@thetackroom.com.au";
+export const FROM_EMAIL = "The Tack Room <hello@tackroomshop.com.au>";
+export const REPLY_TO = "hello@tackroomshop.com.au";
 
 type SendEmailOptions = {
   to: string;
