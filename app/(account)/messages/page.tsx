@@ -40,6 +40,17 @@ export default async function MessagesPage() {
     );
   }
 
+  // Mark all unread messages in the user's conversations as read
+  const allConvoIds = conversations.map((c: any) => c.id);
+  if (allConvoIds.length > 0) {
+    await admin
+      .from("messages")
+      .update({ read_at: new Date().toISOString() })
+      .in("conversation_id", allConvoIds)
+      .neq("sender_id", user.id)
+      .is("read_at", null);
+  }
+
   // Fetch the other party profile + listing title for each conversation
   const otherPartyIds = conversations.map((c: any) =>
     c.buyer_id === user.id ? c.seller_id : c.buyer_id
