@@ -1,6 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import { Heart, Zap } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Heart, Zap, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatAUDCompact } from "@/lib/utils/currency";
 import type { ListingCondition } from "@/types/database.types";
 import { cn } from "@/lib/utils";
@@ -22,6 +24,7 @@ export interface ListingCardData {
   size?: string | null;
   allows_pickup: boolean;
   primary_image?: string | null;
+  images?: string[]; // all images in sort order
   seller_username: string;
   seller_avatar?: string | null;
   seller_is_founding?: boolean;
@@ -50,6 +53,29 @@ export function ListingCard({
 }: ListingCardProps) {
   const cond = CONDITION_LABELS[listing.condition];
 
+  // Build the full images array — fall back to primary_image if no array provided
+  const allImages: string[] =
+    listing.images?.length
+      ? listing.images
+      : listing.primary_image
+      ? [listing.primary_image]
+      : [];
+
+  const [activeIdx, setActiveIdx] = useState(0);
+  const currentImage = allImages[activeIdx] ?? null;
+
+  function prev(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setActiveIdx((i) => (i - 1 + allImages.length) % allImages.length);
+  }
+
+  function next(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setActiveIdx((i) => (i + 1) % allImages.length);
+  }
+
   return (
     <div className={cn(
       "group relative flex flex-col rounded-xl overflow-hidden border bg-white hover:shadow-md transition-shadow duration-200",
@@ -58,10 +84,10 @@ export function ListingCard({
     )}>
       {/* Image */}
       <Link href={`/listings/${listing.id}`} className="relative block aspect-square overflow-hidden bg-muted">
-        {listing.primary_image ? (
+        {currentImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={listing.primary_image}
+            src={currentImage}
             alt={listing.title}
             className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
@@ -105,6 +131,39 @@ export function ListingCard({
             Pickup
           </span>
         )}
+
+        {/* Image cycling arrows — appear on hover */}
+        {allImages.length > 1 && (
+          <>
+            <button
+              onClick={prev}
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 shadow backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+              aria-label="Previous image"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={next}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 shadow backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+              aria-label="Next image"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+
+            {/* Dot indicators */}
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {allImages.map((_, i) => (
+                <span
+                  key={i}
+                  className={cn(
+                    "h-1 rounded-full transition-all",
+                    i === activeIdx ? "w-3 bg-white" : "w-1 bg-white/60"
+                  )}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </Link>
 
       {/* Info */}
@@ -112,6 +171,7 @@ export function ListingCard({
         {/* Seller */}
         <div className="flex items-center gap-1.5">
           {listing.seller_avatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img src={listing.seller_avatar} alt="" className="h-4 w-4 rounded-full object-cover" />
           ) : (
             <div className="h-4 w-4 rounded-full bg-olive/20 flex items-center justify-center">

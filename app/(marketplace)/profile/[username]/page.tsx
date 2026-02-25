@@ -114,8 +114,8 @@ export default async function SellerProfilePage({ params }: { params: Promise<{ 
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {(listings as any[]).map((listing) => {
-              const images = (listing.listing_images ?? []).sort((a: any, b: any) => a.sort_order - b.sort_order);
-              const primaryImage = images.find((i: any) => i.is_primary)?.display_url ?? images[0]?.display_url ?? null;
+              const sorted = (listing.listing_images ?? []).sort((a: any, b: any) => a.sort_order - b.sort_order);
+              const primaryImage = sorted.find((i: any) => i.is_primary)?.display_url ?? sorted[0]?.display_url ?? null;
               return (
                 <ListingCard
                   key={listing.id}
@@ -126,6 +126,7 @@ export default async function SellerProfilePage({ params }: { params: Promise<{ 
                     condition: listing.condition,
                     brand: listing.brand,
                     primary_image: primaryImage,
+                    images: sorted.map((i: any) => i.display_url),
                     seller_username: (profile as any).username,
                     allows_pickup: false,
                   }}

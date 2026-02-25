@@ -39,13 +39,13 @@ export function ListingImageGallery({ images, title }: ListingImageGalleryProps)
           <>
             <button
               onClick={() => setActive((a) => (a - 1 + images.length) % images.length)}
-              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm hover:bg-white transition-colors md:hidden"
+              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm hover:bg-white transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <button
               onClick={() => setActive((a) => (a + 1) % images.length)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm hover:bg-white transition-colors md:hidden"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1.5 shadow backdrop-blur-sm hover:bg-white transition-colors"
             >
               <ChevronRight className="h-4 w-4" />
             </button>

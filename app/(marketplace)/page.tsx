@@ -42,10 +42,9 @@ async function NewestListings() {
   const listings: ListingCardData[] = (rows ?? []).map((r: any) => {
     const images: { display_url: string; is_primary: boolean; sort_order: number }[] =
       r.listing_images ?? [];
+    const sorted = [...images].sort((a, b) => a.sort_order - b.sort_order);
     const primary =
-      images.find((i) => i.is_primary)?.display_url ??
-      images.sort((a, b) => a.sort_order - b.sort_order)[0]?.display_url ??
-      null;
+      images.find((i) => i.is_primary)?.display_url ?? sorted[0]?.display_url ?? null;
     const seller = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
     return {
       id: r.id,
@@ -56,6 +55,7 @@ async function NewestListings() {
       size: r.size,
       allows_pickup: r.allows_pickup,
       primary_image: primary,
+      images: sorted.map((i) => i.display_url),
       seller_username: seller?.username ?? "unknown",
       seller_avatar: seller?.avatar_url ?? null,
       seller_is_founding: seller?.is_founding_seller ?? false,
