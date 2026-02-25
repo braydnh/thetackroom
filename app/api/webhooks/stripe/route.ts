@@ -30,6 +30,17 @@ export async function POST(req: Request) {
 
   const supabase = createAdminClient();
 
+  // ── Stripe Connect account approved ──
+  if (event.type === "account.updated") {
+    const account = event.data.object as Stripe.Account;
+    if (account.charges_enabled) {
+      await supabase
+        .from("profiles")
+        .update({ stripe_onboarding_complete: true, role: "seller" })
+        .eq("stripe_account_id", account.id);
+    }
+  }
+
   if (event.type === "payment_intent.succeeded") {
     const pi = event.data.object as Stripe.PaymentIntent;
 
