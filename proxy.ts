@@ -5,7 +5,40 @@ const PROTECTED_PATHS = ["/dashboard", "/selling", "/orders", "/messages", "/set
 const ADMIN_PATHS = ["/admin"];
 const AUTH_PATHS = ["/login", "/signup", "/forgot-password"];
 
+const BYPASS_COOKIE = "tr_preview";
+
 export async function proxy(request: NextRequest) {
+  const { pathname, searchParams } = request.nextUrl;
+
+  // ── Maintenance mode ──────────────────────────────────────────────────────
+  const maintenanceMode = process.env.MAINTENANCE_MODE === "1";
+  if (maintenanceMode && pathname !== "/maintenance") {
+    const bypassKey = process.env.MAINTENANCE_KEY;
+
+    // Set bypass cookie when correct key is supplied as ?preview=KEY
+    if (bypassKey && searchParams.get("preview") === bypassKey) {
+      const url = request.nextUrl.clone();
+      url.searchParams.delete("preview");
+      const res = NextResponse.redirect(url);
+      res.cookies.set(BYPASS_COOKIE, bypassKey, {
+        httpOnly: true,
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 30,
+        path: "/",
+      });
+      return res;
+    }
+
+    // Allow through if valid bypass cookie present
+    const cookie = request.cookies.get(BYPASS_COOKIE);
+    if (!bypassKey || cookie?.value !== bypassKey) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/maintenance";
+      return NextResponse.rewrite(url);
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
