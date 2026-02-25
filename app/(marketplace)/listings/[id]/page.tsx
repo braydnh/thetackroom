@@ -9,13 +9,13 @@ import {
   ShieldCheck,
   Truck,
   MapPin,
-  Heart,
   Star,
   ChevronLeft,
   Package,
 } from "lucide-react";
 import { ListingImageGallery } from "@/components/listings/ListingImageGallery";
 import { MessageSellerButton } from "@/components/listings/MessageSellerButton";
+import { FavouriteButton } from "@/components/listings/FavouriteButton";
 import { createClient } from "@/lib/supabase/server";
 
 const CONDITION_LABELS: Record<string, string> = {
@@ -79,6 +79,19 @@ export default async function ListingDetailPage({
     listing_images: { id: string; display_url: string; is_primary: boolean; sort_order: number }[];
     profiles: { id: string; username: string; display_name: string | null; avatar_url: string | null; location: string | null; average_rating: number | null; total_sales: number; is_founding_seller: boolean } | null;
   };
+
+  // Check if current user has favourited this listing
+  const { data: { user } } = await supabase.auth.getUser();
+  let isFavourited = false;
+  if (user) {
+    const { data: fav } = await supabase
+      .from("favourites")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("listing_id", id)
+      .maybeSingle();
+    isFavourited = !!fav;
+  }
 
   // Increment view count (fire-and-forget, best-effort)
   const currentViewCount = (listing as any).view_count as number ?? 0;
@@ -292,10 +305,7 @@ export default async function ListingDetailPage({
                 {seller && (
                   <MessageSellerButton sellerId={seller.id} listingId={listing.id} />
                 )}
-                <Button variant="outline" className="gap-2">
-                  <Heart className="h-4 w-4" />
-                  Save
-                </Button>
+                <FavouriteButton listingId={listing.id} initialFavourited={isFavourited} />
               </div>
             </div>
           ) : (

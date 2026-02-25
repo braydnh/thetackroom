@@ -56,6 +56,7 @@ const navLinks = [
 
 interface NavbarProps {
   user?: { username: string; avatar_url?: string | null; role?: string | null } | null;
+  unreadMessages?: number;
 }
 
 function MobileShopSection({
@@ -157,7 +158,7 @@ function ShopMegaMenu() {
   );
 }
 
-export function Navbar({ user }: NavbarProps) {
+export function Navbar({ user, unreadMessages = 0 }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -301,9 +302,12 @@ export function Navbar({ user }: NavbarProps) {
               </Button>
 
               {/* Messages */}
-              <Button variant="ghost" size="icon" asChild>
+              <Button variant="ghost" size="icon" asChild className="relative">
                 <Link href="/messages">
                   <MessageCircle className="h-5 w-5" />
+                  {unreadMessages > 0 && (
+                    <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 border border-white" />
+                  )}
                   <span className="sr-only">Messages</span>
                 </Link>
               </Button>
