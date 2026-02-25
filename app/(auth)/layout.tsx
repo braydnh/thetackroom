@@ -17,7 +17,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {/* Footer */}
       <div className="text-center pb-8">
         <p className="text-xs text-cream/30">
-          &copy; {new Date().getFullYear()} The Tack Room AU &bull;{" "}
+          &copy; {new Date().getFullYear()} The Tack Room &bull;{" "}
           <Link href="/privacy" className="hover:text-cream/60 transition-colors">
             Privacy
           </Link>{" "}

@@ -136,10 +136,10 @@ export default async function HomePage() {
               className="text-3xl sm:text-4xl lg:text-5xl font-bold text-cream leading-tight"
               style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
             >
-              Let your gear find its second stride
+              Where your gear finds its second stride
             </h1>
             <p className="mt-2 text-cream/60 text-sm sm:text-base">
-              Australia&apos;s marketplace for pre-loved equestrian equipment
+              Australia&apos;s marketplace for pre-loved equestrian gear
             </p>
           </div>
 

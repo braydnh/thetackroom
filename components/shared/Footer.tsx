@@ -38,7 +38,7 @@ export function Footer() {
           <div className="col-span-2 lg:col-span-1">
             <Logo variant="full" theme="dark" />
             <p className="mt-4 text-sm text-cream/70 leading-relaxed">
-              Let your gear find its second stride.
+              Where your gear finds its second stride.
             </p>
             <p className="mt-2 text-xs text-cream/50">
               Australia&apos;s equestrian marketplace.
@@ -102,7 +102,7 @@ export function Footer() {
 
         <div className="mt-12 border-t border-olive-light pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-cream/40">
-            &copy; {new Date().getFullYear()} The Tack Room AU. All rights reserved.
+            &copy; {new Date().getFullYear()} The Tack Room. All rights reserved.
           </p>
           <p className="text-xs text-cream/40">
             Payments secured by Stripe. EST. 2026.

@@ -34,7 +34,7 @@ const faqs = [
   {
     category: "Messaging",
     items: [
-      { q: "Why can't I share my phone number or email in messages?", a: "To protect both buyers and sellers, sharing personal contact details in messages is not permitted. All communication and transactions should happen through the Platform, which ensures both parties are protected." },
+      { q: "Why can't I share my phone number or email in messages?", a: "To protect both buyers and sellers, sharing personal contact details in messages is not permitted. All communication and transactions should happen through the platform, which ensures both parties are protected." },
       { q: "Can I message a seller before buying?", a: "Yes — on any listing page, click the 'Message Seller' button to start a conversation." },
     ],
   },

@@ -16,7 +16,7 @@ export default function BuyerProtectionPage() {
           Buyer Protection
         </h1>
         <p className="text-muted-foreground max-w-xl mx-auto">
-          Every purchase on The Tack Room AU is protected. Your payment is held securely until you confirm you&apos;re happy with your item.
+          Every purchase on The Tack Room is protected. Your payment is held securely until you confirm you&apos;re happy with your item.
         </p>
       </div>
 

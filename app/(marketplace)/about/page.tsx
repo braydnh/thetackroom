@@ -11,10 +11,10 @@ export default function AboutPage() {
       {/* Hero */}
       <div className="mb-12">
         <h1 className="text-3xl font-bold text-navy mb-4" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
-          Let your gear find its second stride.
+          Where your gear finds its second stride.
         </h1>
         <p className="text-lg text-muted-foreground leading-relaxed">
-          The Tack Room AU is Australia&apos;s dedicated marketplace for second-hand equestrian equipment — built by horse people, for horse people.
+          The Tack Room is Australia&apos;s dedicated marketplace for second-hand equestrian gear — built by equestrians, for equestrians.
         </p>
       </div>
 
