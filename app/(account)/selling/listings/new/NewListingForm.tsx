@@ -91,7 +91,7 @@ export default function NewListingForm() {
   const canProceedToDelivery =
     images.length > 0 &&
     form.title.trim().length >= 3 &&
-    form.description.trim().length >= 10 &&
+    form.description.trim().length >= 20 &&
     priceCents > 0 &&
     form.category &&
     form.condition;
@@ -296,9 +296,12 @@ export default function NewListingForm() {
               maxLength={2000}
               className="resize-none"
             />
-            <p className="text-xs text-muted-foreground text-right">
-              {form.description.length}/2000
-            </p>
+            <div className="flex justify-between">
+              {form.description.trim().length < 20 && form.description.length > 0 && (
+                <p className="text-xs text-destructive">{20 - form.description.trim().length} more characters needed</p>
+              )}
+              <p className="text-xs text-muted-foreground ml-auto">{form.description.length}/2000</p>
+            </div>
           </div>
 
           {/* Price */}
@@ -457,14 +460,17 @@ export default function NewListingForm() {
               </div>
               <button
                 type="button"
+                role="switch"
+                aria-checked={form.allowsShipping}
                 onClick={() => set("allowsShipping", !form.allowsShipping)}
-                className={`relative h-6 w-11 rounded-full transition-colors overflow-hidden ${
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                   form.allowsShipping ? "bg-olive" : "bg-muted"
                 }`}
               >
                 <span
-                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                    form.allowsShipping ? "translate-x-[22px]" : "translate-x-0.5"
+                  aria-hidden="true"
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    form.allowsShipping ? "translate-x-5" : "translate-x-0"
                   }`}
                 />
               </button>
@@ -519,14 +525,17 @@ export default function NewListingForm() {
               </div>
               <button
                 type="button"
+                role="switch"
+                aria-checked={form.allowsPickup}
                 onClick={() => set("allowsPickup", !form.allowsPickup)}
-                className={`relative h-6 w-11 rounded-full transition-colors overflow-hidden ${
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                   form.allowsPickup ? "bg-olive" : "bg-muted"
                 }`}
               >
                 <span
-                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                    form.allowsPickup ? "translate-x-[22px]" : "translate-x-0.5"
+                  aria-hidden="true"
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    form.allowsPickup ? "translate-x-5" : "translate-x-0"
                   }`}
                 />
               </button>
