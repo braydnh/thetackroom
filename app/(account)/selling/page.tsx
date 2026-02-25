@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatAUD } from "@/lib/utils/currency";
 import {
   Plus, Package, Banknote, Zap, Star, AlertCircle,
-  CheckCircle, Clock, Eye, Heart, ChevronRight,
+  CheckCircle, Clock, Eye, Heart, ChevronRight, Hourglass,
 } from "lucide-react";
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
@@ -41,6 +41,7 @@ export default async function SellerDashboardPage() {
   if (!profile) redirect("/settings?setup=1");
 
   const isOnboarded = profile.stripe_onboarding_complete;
+  const isPending = !isOnboarded && !!profile.stripe_account_id;
   const activeListings = (listings ?? []).filter((l: any) => l.status === "active");
   const soldListings   = (listings ?? []).filter((l: any) => l.status === "sold");
 
@@ -74,7 +75,18 @@ export default async function SellerDashboardPage() {
       </div>
 
       {/* ── Stripe Connect banner ── */}
-      {!isOnboarded && (
+      {isPending && (
+        <div className="mb-6 rounded-xl border-2 border-sky-200 bg-sky-50 p-5 flex items-start gap-4">
+          <Hourglass className="h-5 w-5 text-sky-600 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="font-semibold text-sky-900">Account verification in progress</p>
+            <p className="text-sm text-sky-700 mt-1">
+              Stripe is reviewing your details. This usually takes a few minutes — your dashboard will update automatically once approved.
+            </p>
+          </div>
+        </div>
+      )}
+      {!isOnboarded && !isPending && (
         <div className="mb-6 rounded-xl border-2 border-amber-200 bg-amber-50 p-5 flex items-start gap-4">
           <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
           <div className="flex-1">
@@ -98,9 +110,9 @@ export default async function SellerDashboardPage() {
             value: profile.average_rating ? `${Number(profile.average_rating).toFixed(1)} ★` : "–",
             icon: Star },
           { label: "Account status",
-            value: isOnboarded ? "Ready" : "Setup needed",
-            icon: isOnboarded ? CheckCircle : AlertCircle,
-            accent: isOnboarded ? "text-emerald-600" : "text-amber-600" },
+            value: isOnboarded ? "Ready" : isPending ? "Pending" : "Setup needed",
+            icon: isOnboarded ? CheckCircle : isPending ? Clock : AlertCircle,
+            accent: isOnboarded ? "text-emerald-600" : isPending ? "text-sky-600" : "text-amber-600" },
         ].map((stat) => (
           <div key={stat.label} className="rounded-xl border border-border bg-white p-4">
             <stat.icon className={`h-4 w-4 mb-2 ${stat.accent ?? "text-olive"}`} />
