@@ -17,6 +17,10 @@ export default function AmbassadorApplyPage() {
   const [checking, setChecking] = useState(true);
   const [existingStatus, setExistingStatus] = useState<"pending" | "approved" | "denied" | null>(null);
 
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [location, setLocation] = useState("");
+  const [ridingBio, setRidingBio] = useState("");
   const [motivation, setMotivation] = useState("");
   const [instagram, setInstagram] = useState("");
   const [tiktok, setTiktok] = useState("");
@@ -43,15 +47,37 @@ export default function AmbassadorApplyPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (motivation.trim().length < 20) {
-      toast.error("Please tell us a bit more about why you'd like to be an ambassador.");
-      return;
-    }
+    if (!fullName.trim()) { toast.error("Please enter your full name."); return; }
+    if (!email.trim()) { toast.error("Please enter your email address."); return; }
+    if (!location.trim()) { toast.error("Please enter your location."); return; }
+    if (ridingBio.trim().length < 20) { toast.error("Please tell us a bit more about yourself and your riding."); return; }
+    if (motivation.trim().length < 20) { toast.error("Please tell us more about why you'd like to be an ambassador."); return; }
+
     setLoading(true);
+
+    // Combine all fields into a structured motivation string
+    const combined = [
+      `FULL NAME: ${fullName.trim()}`,
+      `EMAIL: ${email.trim()}`,
+      `LOCATION: ${location.trim()}`,
+      ``,
+      `ABOUT ME & MY RIDING:`,
+      ridingBio.trim(),
+      ``,
+      `WHY I'D BE A GREAT AMBASSADOR:`,
+      motivation.trim(),
+    ].join("\n");
+
     const res = await fetch("/api/ambassador/apply", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ motivation, instagram_handle: instagram, tiktok_handle: tiktok, facebook_url: facebook, follower_count: followers || null }),
+      body: JSON.stringify({
+        motivation: combined,
+        instagram_handle: instagram,
+        tiktok_handle: tiktok,
+        facebook_url: facebook,
+        follower_count: followers || null,
+      }),
     });
     const json = await res.json();
     if (!res.ok) {
@@ -92,7 +118,7 @@ export default function AmbassadorApplyPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 sm:px-6 py-12">
       {/* Hero */}
-      <div className="mb-8">
+      <div className="mb-6">
         <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-olive/10 mb-4">
           <Star className="h-6 w-6 text-olive" />
         </div>
@@ -100,15 +126,35 @@ export default function AmbassadorApplyPage() {
           Become an Ambassador
         </h1>
         <p className="text-muted-foreground leading-relaxed">
-          Love equestrian sport and want to support the community? Apply to become a Tack Room Ambassador and earn <strong>50% off your seller commission</strong> on every sale.
+          Love equestrian sport and want to support the community? Apply to become a Tack Room Ambassador and earn perks as we grow together.
         </p>
       </div>
 
-      {/* Benefits callout */}
-      <div className="rounded-xl bg-olive/5 border border-olive/20 p-5 mb-8 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-        <div><p className="font-medium text-navy">50% off commission</p><p className="text-muted-foreground">Pay just 2.5% instead of 5% on every sale</p></div>
-        <div><p className="font-medium text-navy">Ambassador badge</p><p className="text-muted-foreground">Displayed on your profile and listings</p></div>
-        <div><p className="font-medium text-navy">Community role</p><p className="text-muted-foreground">Help grow Australia&apos;s equestrian marketplace</p></div>
+      {/* Welcome message */}
+      <div className="rounded-xl border border-olive/20 bg-olive/5 p-5 mb-8 space-y-3 text-sm text-navy/80 leading-relaxed">
+        <p>Hey 🤎 thanks so much for applying to be an Ambassador — we&apos;re so excited you&apos;re interested!</p>
+        <p>
+          As an Ambassador, we ask that you share your buying/selling experience on the platform, post occasional stories or reels featuring your listings or purchases, engage with The Tack Room as we grow, and promote The Tack Room within your community.
+        </p>
+        <p>In return, you&apos;ll receive the perks outlined in our Ambassador search post ✨</p>
+        <p className="font-medium text-navy">To continue your application, please fill in the details below:</p>
+        <ol className="list-none space-y-1 pl-0">
+          {[
+            "Full name",
+            "Email address",
+            "Instagram handle (and any other social accounts)",
+            "Your location (city/state)",
+            "A bit about yourself and your riding — what you love, how often you ride, and your discipline(s)",
+            "Why you'd like to be an Ambassador and why you'd be a great fit",
+          ].map((item, i) => (
+            <li key={i} className="flex items-start gap-2">
+              <span className="font-semibold text-olive flex-shrink-0">{i + 1}.</span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ol>
+        <p>We&apos;ll be selecting ambassadors in the coming weeks and would love to see you engaging with our posts in the meantime 🌟</p>
+        <p className="font-medium text-navy">Can&apos;t wait to learn more about you!<br />The Tack Room Team</p>
       </div>
 
       {existingStatus === "denied" && (
@@ -118,8 +164,85 @@ export default function AmbassadorApplyPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
+        {/* 1. Full name */}
         <div className="space-y-1.5">
-          <Label htmlFor="motivation">Why do you want to be a Tack Room Ambassador? <span className="text-destructive">*</span></Label>
+          <Label htmlFor="fullName">1. Full name <span className="text-destructive">*</span></Label>
+          <Input
+            id="fullName"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Jane Smith"
+            required
+          />
+        </div>
+
+        {/* 2. Email */}
+        <div className="space-y-1.5">
+          <Label htmlFor="email">2. Email address <span className="text-destructive">*</span></Label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="jane@example.com"
+            required
+          />
+        </div>
+
+        {/* 3. Social media */}
+        <div className="space-y-3">
+          <Label>3. Social media handles <span className="text-destructive">*</span></Label>
+          <p className="text-xs text-muted-foreground -mt-1">Instagram is required; other platforms are optional.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="instagram" className="text-xs text-muted-foreground font-normal">Instagram <span className="text-destructive">*</span></Label>
+              <Input id="instagram" placeholder="@yourhandle" value={instagram} onChange={(e) => setInstagram(e.target.value)} required />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tiktok" className="text-xs text-muted-foreground font-normal">TikTok</Label>
+              <Input id="tiktok" placeholder="@yourhandle" value={tiktok} onChange={(e) => setTiktok(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="facebook" className="text-xs text-muted-foreground font-normal">Facebook profile/page URL</Label>
+              <Input id="facebook" placeholder="facebook.com/..." value={facebook} onChange={(e) => setFacebook(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="followers" className="text-xs text-muted-foreground font-normal">Approx. combined followers</Label>
+              <Input id="followers" type="number" placeholder="e.g. 2500" value={followers} onChange={(e) => setFollowers(e.target.value)} min={0} />
+            </div>
+          </div>
+        </div>
+
+        {/* 4. Location */}
+        <div className="space-y-1.5">
+          <Label htmlFor="location">4. Your location (city/state) <span className="text-destructive">*</span></Label>
+          <Input
+            id="location"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="e.g. Sydney, NSW"
+            required
+          />
+        </div>
+
+        {/* 5. About your riding */}
+        <div className="space-y-1.5">
+          <Label htmlFor="ridingBio">5. About yourself and your riding <span className="text-destructive">*</span></Label>
+          <p className="text-xs text-muted-foreground">What you love, how often you ride, and your discipline(s).</p>
+          <Textarea
+            id="ridingBio"
+            value={ridingBio}
+            onChange={(e) => setRidingBio(e.target.value)}
+            placeholder="e.g. I've been riding for 12 years, competing in showjumping and dressage. I ride 5 days a week and am passionate about..."
+            rows={4}
+            required
+          />
+          <p className="text-xs text-muted-foreground">{ridingBio.length} characters</p>
+        </div>
+
+        {/* 6. Why ambassador */}
+        <div className="space-y-1.5">
+          <Label htmlFor="motivation">6. Why you&apos;d like to be an Ambassador and why you&apos;d be a great fit <span className="text-destructive">*</span></Label>
           <Textarea
             id="motivation"
             value={motivation}
@@ -128,29 +251,7 @@ export default function AmbassadorApplyPage() {
             rows={5}
             required
           />
-          <p className="text-xs text-muted-foreground">{motivation.length} characters (minimum 20)</p>
-        </div>
-
-        <div className="space-y-3">
-          <p className="text-sm font-medium text-navy">Social media handles <span className="font-normal text-muted-foreground">(optional — helps us review your application)</span></p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="instagram">Instagram</Label>
-              <Input id="instagram" placeholder="@yourhandle" value={instagram} onChange={(e) => setInstagram(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="tiktok">TikTok</Label>
-              <Input id="tiktok" placeholder="@yourhandle" value={tiktok} onChange={(e) => setTiktok(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="facebook">Facebook profile/page URL</Label>
-              <Input id="facebook" placeholder="facebook.com/..." value={facebook} onChange={(e) => setFacebook(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="followers">Approx. combined followers</Label>
-              <Input id="followers" type="number" placeholder="e.g. 2500" value={followers} onChange={(e) => setFollowers(e.target.value)} min={0} />
-            </div>
-          </div>
+          <p className="text-xs text-muted-foreground">{motivation.length} characters</p>
         </div>
 
         <Button type="submit" className="bg-olive hover:bg-olive-light text-cream w-full sm:w-auto" disabled={loading}>
