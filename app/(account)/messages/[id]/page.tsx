@@ -115,13 +115,12 @@ export default function MessageThreadPage() {
     setMessages((msgs ?? []) as Message[]);
     setLoading(false);
 
-    // Mark unread messages as read
-    await supabase
-      .from("messages")
-      .update({ read_at: new Date().toISOString() })
-      .eq("conversation_id", id)
-      .neq("sender_id", user.id)
-      .is("read_at", null);
+    // Mark unread messages as read via admin API (bypasses RLS on read_at updates)
+    fetch("/api/messages/read", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ conversation_id: id }),
+    }).catch(() => {});
   }, [id, supabase, router]);
 
   useEffect(() => {
@@ -147,11 +146,11 @@ export default function MessageThreadPage() {
           });
           // Mark as read if it's from the other party
           if (meta && newMsg.sender_id !== meta.current_user_id) {
-            supabase
-              .from("messages")
-              .update({ read_at: new Date().toISOString() })
-              .eq("id", newMsg.id)
-              .then(() => {});
+            fetch("/api/messages/read", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ conversation_id: id }),
+            }).catch(() => {});
           }
         }
       )
