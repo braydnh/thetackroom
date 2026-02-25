@@ -5,7 +5,9 @@ import { Search, ArrowRight, ShieldCheck, Truck, Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ListingGrid } from "@/components/listings/ListingGrid";
 import { FeaturedListings } from "@/components/listings/FeaturedListings";
+import { AmbassadorSlideshow } from "@/components/listings/AmbassadorSlideshow";
 import type { ListingCardData } from "@/components/listings/ListingCard";
+import type { AmbassadorListing } from "@/components/listings/AmbassadorSlideshow";
 
 const CATEGORY_PILLS = [
   { label: "All", href: "/listings" },
@@ -78,7 +80,45 @@ async function NewestListings() {
   return <ListingGrid listings={listings} />;
 }
 
+async function getAmbassadorListings(): Promise<AmbassadorListing[]> {
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("listings")
+    .select(`
+      id, title, price,
+      listing_images(display_url, is_primary, sort_order),
+      profiles!seller_id(username, avatar_url, is_ambassador)
+    `)
+    .eq("status", "active")
+    .eq("profiles.is_ambassador", true)
+    .order("created_at", { ascending: false })
+    .limit(24);
+
+  return (rows ?? [])
+    .filter((r: any) => {
+      const seller = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
+      return seller?.is_ambassador;
+    })
+    .map((r: any) => {
+      const seller = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
+      const images: { display_url: string; is_primary: boolean; sort_order: number }[] =
+        r.listing_images ?? [];
+      const sorted = [...images].sort((a, b) => a.sort_order - b.sort_order);
+      const image = images.find((i) => i.is_primary)?.display_url ?? sorted[0]?.display_url ?? null;
+      return {
+        id: r.id,
+        title: r.title,
+        price: r.price,
+        image,
+        seller_username: seller?.username ?? "unknown",
+        seller_avatar: seller?.avatar_url ?? null,
+      };
+    });
+}
+
 export default async function HomePage() {
+  const ambassadorListings = await getAmbassadorListings();
+
   return (
     <>
       {/* ── Hero with search ── */}
@@ -220,31 +260,41 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── Founding Sellers CTA ── */}
+      {/* ── Ambassador CTA ── */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
         <div
-          className="rounded-2xl p-8 sm:p-12 text-center"
+          className="rounded-2xl overflow-hidden"
           style={{ backgroundColor: "#2C3726" }}
         >
-          <Badge className="mb-4 border-cream/20 bg-cream/10 text-cream/80" variant="outline">
-            Founding Sellers Program
-          </Badge>
-          <h2
-            className="text-2xl sm:text-3xl font-bold text-cream max-w-lg mx-auto"
-            style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
-          >
-            Be part of something from the beginning
-          </h2>
-          <p className="mt-3 text-cream/60 text-sm max-w-sm mx-auto">
-            Join as a Founding Seller and get early access, a special badge on your profile, and help shape the platform.
-          </p>
-          <Button
-            size="lg"
-            className="mt-6 bg-cream text-olive hover:bg-cream/90 font-semibold"
-            asChild
-          >
-            <Link href="/signup?founding=true">Apply Now</Link>
-          </Button>
+          {/* Text + button */}
+          <div className="px-8 sm:px-12 pt-10 pb-8 text-center">
+            <Badge className="mb-4 border-cream/20 bg-cream/10 text-cream/80" variant="outline">
+              Ambassador Program
+            </Badge>
+            <h2
+              className="text-2xl sm:text-3xl font-bold text-cream max-w-lg mx-auto"
+              style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
+            >
+              Shop from our community ambassadors
+            </h2>
+            <p className="mt-3 text-cream/60 text-sm max-w-sm mx-auto">
+              Our ambassadors are passionate riders sharing their gear. Love equestrian sport? Apply to join the team.
+            </p>
+            <Button
+              size="lg"
+              className="mt-6 bg-cream text-olive hover:bg-cream/90 font-semibold"
+              asChild
+            >
+              <Link href="/ambassador/apply">Become an Ambassador</Link>
+            </Button>
+          </div>
+
+          {/* Slideshow */}
+          {ambassadorListings.length > 0 && (
+            <div className="pb-8 px-0">
+              <AmbassadorSlideshow listings={ambassadorListings} />
+            </div>
+          )}
         </div>
       </section>
     </>
