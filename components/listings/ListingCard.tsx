@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Heart, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatAUDCompact } from "@/lib/utils/currency";
@@ -60,12 +59,11 @@ export function ListingCard({
       {/* Image */}
       <Link href={`/listings/${listing.id}`} className="relative block aspect-square overflow-hidden bg-muted">
         {listing.primary_image ? (
-          <Image
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
             src={listing.primary_image}
             alt={listing.title}
-            fill
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-stone-100">
