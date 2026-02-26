@@ -112,26 +112,28 @@ function NotificationBell({ unreadNotifications = 0 }: { unreadNotifications: nu
           <span className="sr-only">Notifications</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 p-0">
-        <div className="px-4 py-3 border-b border-border">
-          <p className="font-semibold text-sm text-navy">Notifications</p>
+      <DropdownMenuContent align="end" className="w-72 p-0">
+        <div className="px-3 py-2 border-b border-border">
+          <p className="text-xs font-semibold text-navy uppercase tracking-wide">Notifications</p>
         </div>
         {loading ? (
-          <div className="flex items-center justify-center p-8">
+          <div className="flex items-center justify-center p-6">
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           </div>
         ) : notifications.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-sm text-muted-foreground">No notifications yet</p>
+          <div className="p-6 text-center">
+            <p className="text-xs text-muted-foreground">No notifications yet</p>
           </div>
         ) : (
-          <div className="max-h-96 overflow-y-auto divide-y divide-border">
+          <div className="max-h-80 overflow-y-auto divide-y divide-border">
             {notifications.map((n) => (
               <DropdownMenuItem key={n.id} asChild className={!n.read_at ? "bg-olive/5" : ""}>
-                <Link href={n.link ?? "/"} className="flex flex-col gap-0.5 px-4 py-3 cursor-pointer">
-                  <span className="text-sm font-medium text-navy">{n.title}</span>
-                  {n.body && <span className="text-xs text-muted-foreground leading-snug">{n.body}</span>}
-                  <span className="text-[10px] text-muted-foreground mt-0.5">{formatTimeAgo(n.created_at)}</span>
+                <Link href={n.link ?? "/"} className="flex flex-col gap-0.5 px-3 py-2 cursor-pointer">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-navy leading-tight">{n.title}</span>
+                    <span className="text-[10px] text-muted-foreground shrink-0">{formatTimeAgo(n.created_at)}</span>
+                  </div>
+                  {n.body && <span className="text-[11px] text-muted-foreground leading-snug">{n.body}</span>}
                 </Link>
               </DropdownMenuItem>
             ))}
