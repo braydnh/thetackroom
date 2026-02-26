@@ -11,7 +11,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/resend";
-import { newOrderEmail } from "@/lib/emails";
+import { newOrderEmail, orderConfirmedBuyerEmail } from "@/lib/emails";
 import { formatAUD } from "@/lib/utils/currency";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01-28.clover" });
@@ -75,10 +75,24 @@ export async function POST(req: Request) {
     if (pi.metadata.type === "order_payment" && pi.metadata.order_id) {
       const orderId = pi.metadata.order_id;
 
+      // Idempotency: only process if still pending_payment
+      const { data: currentOrder } = await supabase
+        .from("orders")
+        .select("status, seller_id, buyer_id, subtotal, pickup_method, listing_id, listings(title)")
+        .eq("id", orderId)
+        .single();
+
+      if (currentOrder?.status !== "pending_payment") {
+        return NextResponse.json({ received: true });
+      }
+
+      // Shipping orders go straight to awaiting_shipment; local pickup stays at payment_captured
+      const newStatus = currentOrder.pickup_method === "shipping" ? "awaiting_shipment" : "payment_captured";
+
       await supabase
         .from("orders")
         .update({
-          status: "payment_captured",
+          status: newStatus,
           stripe_payment_intent_id: pi.id,
           stripe_charge_id: pi.latest_charge as string | null,
         })
@@ -92,40 +106,73 @@ export async function POST(req: Request) {
           .eq("id", pi.metadata.listing_id);
       }
 
-      // Email seller about the new order
+      // Fetch profiles + emails for both parties
       try {
-        const { data: order } = await supabase
-          .from("orders")
-          .select("seller_id, buyer_id, subtotal, listing_id, listings(title)")
-          .eq("id", orderId)
-          .single();
+        const listingTitle = (currentOrder.listings as any)?.title ?? "Your listing";
+        const totalAmount = formatAUD(pi.amount_received);
 
-        if (order) {
-          const [{ data: sellerProfile }, sellerAuth, { data: buyerProfile }] = await Promise.all([
-            supabase.from("profiles").select("username, display_name").eq("id", order.seller_id).single(),
-            supabase.auth.admin.getUserById(order.seller_id),
-            supabase.from("profiles").select("username").eq("id", order.buyer_id).single(),
-          ]);
+        const [{ data: sellerProfile }, sellerAuth, { data: buyerProfile }, buyerAuth] = await Promise.all([
+          supabase.from("profiles").select("username, display_name").eq("id", currentOrder.seller_id).single(),
+          supabase.auth.admin.getUserById(currentOrder.seller_id),
+          supabase.from("profiles").select("username, display_name").eq("id", currentOrder.buyer_id).single(),
+          supabase.auth.admin.getUserById(currentOrder.buyer_id),
+        ]);
 
-          const sellerEmail = (sellerAuth as any).data?.user?.email;
-          const listingTitle = (order.listings as any)?.title ?? "Your listing";
+        const sellerEmail = (sellerAuth as any).data?.user?.email;
+        const buyerEmail = (buyerAuth as any).data?.user?.email;
+        const sellerName = sellerProfile?.display_name ?? sellerProfile?.username ?? "there";
+        const buyerName = buyerProfile?.display_name ?? buyerProfile?.username ?? "A buyer";
 
-          if (sellerEmail) {
-            await sendEmail({
-              to: sellerEmail,
-              subject: `You've made a sale — ${listingTitle}`,
-              html: newOrderEmail({
-                sellerName: sellerProfile?.display_name ?? sellerProfile?.username ?? "there",
-                buyerName: buyerProfile?.username ?? "A buyer",
-                listingTitle,
-                amount: formatAUD(order.subtotal),
-                orderId,
-              }),
-            });
-          }
+        // Email seller
+        if (sellerEmail) {
+          await sendEmail({
+            to: sellerEmail,
+            subject: `You've made a sale — ${listingTitle}`,
+            html: newOrderEmail({
+              sellerName,
+              buyerName,
+              listingTitle,
+              amount: formatAUD(currentOrder.subtotal),
+              orderId,
+            }),
+          });
         }
+
+        // Email buyer
+        if (buyerEmail) {
+          await sendEmail({
+            to: buyerEmail,
+            subject: `Order confirmed — ${listingTitle}`,
+            html: orderConfirmedBuyerEmail({
+              buyerName,
+              listingTitle,
+              sellerName,
+              amount: totalAmount,
+              orderId,
+              pickupMethod: currentOrder.pickup_method as "shipping" | "local_pickup",
+            }),
+          });
+        }
+
+        // In-app notification for seller
+        await supabase.from("notifications").insert({
+          user_id: currentOrder.seller_id,
+          type: "new_sale",
+          title: "You've made a sale!",
+          body: `${buyerName} purchased "${listingTitle}"`,
+          link: `/selling/orders/${orderId}`,
+        });
+
+        // In-app notification for buyer
+        await supabase.from("notifications").insert({
+          user_id: currentOrder.buyer_id,
+          type: "order_confirmed",
+          title: "Order confirmed",
+          body: `Your purchase of "${listingTitle}" is confirmed.`,
+          link: `/orders/${orderId}`,
+        });
       } catch {
-        // Email failure should not affect order processing
+        // Notifications/email failure should not affect order processing
       }
     }
   }

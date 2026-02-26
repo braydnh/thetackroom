@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useRef } from "react";
-import { Menu, X, Search, Heart, MessageCircle, User, ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { Menu, X, Search, Heart, MessageCircle, User, ChevronDown, ChevronRight, Plus, Bell, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -57,6 +57,89 @@ const navLinks = [
 interface NavbarProps {
   user?: { username: string; avatar_url?: string | null; role?: string | null } | null;
   unreadMessages?: number;
+  unreadNotifications?: number;
+}
+
+interface NotificationItem {
+  id: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  read_at: string | null;
+  created_at: string;
+  type: string;
+}
+
+function formatTimeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+function NotificationBell({ unreadNotifications = 0 }: { unreadNotifications: number }) {
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [hasUnread, setHasUnread] = useState(unreadNotifications > 0);
+
+  async function handleOpenChange(open: boolean) {
+    if (!open) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/notifications");
+      const data = await res.json();
+      setNotifications(Array.isArray(data) ? data : []);
+    } finally {
+      setLoading(false);
+    }
+    if (hasUnread) {
+      fetch("/api/notifications", { method: "PATCH" });
+      setHasUnread(false);
+    }
+  }
+
+  return (
+    <DropdownMenu onOpenChange={handleOpenChange}>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="relative">
+          <Bell className="h-5 w-5" />
+          {hasUnread && (
+            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 border border-white" />
+          )}
+          <span className="sr-only">Notifications</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80 p-0">
+        <div className="px-4 py-3 border-b border-border">
+          <p className="font-semibold text-sm text-navy">Notifications</p>
+        </div>
+        {loading ? (
+          <div className="flex items-center justify-center p-8">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          </div>
+        ) : notifications.length === 0 ? (
+          <div className="p-8 text-center">
+            <p className="text-sm text-muted-foreground">No notifications yet</p>
+          </div>
+        ) : (
+          <div className="max-h-96 overflow-y-auto divide-y divide-border">
+            {notifications.map((n) => (
+              <DropdownMenuItem key={n.id} asChild className={!n.read_at ? "bg-olive/5" : ""}>
+                <Link href={n.link ?? "/"} className="flex flex-col gap-0.5 px-4 py-3 cursor-pointer">
+                  <span className="text-sm font-medium text-navy">{n.title}</span>
+                  {n.body && <span className="text-xs text-muted-foreground leading-snug">{n.body}</span>}
+                  <span className="text-[10px] text-muted-foreground mt-0.5">{formatTimeAgo(n.created_at)}</span>
+                </Link>
+              </DropdownMenuItem>
+            ))}
+          </div>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 function MobileShopSection({
@@ -158,7 +241,7 @@ function ShopMegaMenu() {
   );
 }
 
-export function Navbar({ user, unreadMessages = 0 }: NavbarProps) {
+export function Navbar({ user, unreadMessages = 0, unreadNotifications = 0 }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -311,6 +394,9 @@ export function Navbar({ user, unreadMessages = 0 }: NavbarProps) {
                   <span className="sr-only">Messages</span>
                 </Link>
               </Button>
+
+              {/* Notifications */}
+              <NotificationBell unreadNotifications={unreadNotifications} />
 
               {/* Sell button */}
               <Button size="sm" className="hidden sm:inline-flex gap-1.5 bg-olive hover:bg-olive-light text-cream" asChild>

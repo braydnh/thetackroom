@@ -140,6 +140,26 @@ export default function OrderDetailPage() {
       .catch(() => setLoading(false));
   }, [id]);
 
+  // When arriving from a successful payment, poll until webhook updates the status
+  useEffect(() => {
+    if (!confirmed) return;
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts++;
+      if (attempts > 10) { clearInterval(interval); return; } // give up after 30s
+      fetch(`/api/orders/${id}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.status && data.status !== "pending_payment") {
+            setOrder(data);
+            clearInterval(interval);
+          }
+        })
+        .catch(() => {});
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [confirmed, id]);
+
   async function handleConfirmPickup() {
     setConfirmingPickup(true);
     const res = await fetch(`/api/orders/${id}/confirm-pickup`, { method: "POST" });

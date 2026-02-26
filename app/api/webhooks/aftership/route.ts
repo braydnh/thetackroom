@@ -13,6 +13,8 @@
 import { NextResponse } from "next/server";
 import { createHmac } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendEmail } from "@/lib/resend";
+import { itemDeliveredSellerEmail } from "@/lib/emails";
 
 function verifyHmac(body: string, signature: string, secret: string): boolean {
   const expected = createHmac("sha256", secret).update(body).digest("hex");
@@ -63,7 +65,7 @@ export async function POST(req: Request) {
   const admin = createAdminClient();
 
   // Find order — try by order_id from custom_fields first, then by aftership_tracking_id
-  let query = admin.from("orders").select("id, status");
+  let query = admin.from("orders").select("id, status, seller_id, listing_id, listings(title)");
   if (orderId) {
     query = query.eq("id", orderId) as any;
   } else {
@@ -93,6 +95,35 @@ export async function POST(req: Request) {
     .eq("id", order.id);
 
   console.log(`Order ${order.id} entered dispute window. Ends: ${disputeWindowEndsAt}`);
+
+  // Email seller + in-app notification
+  try {
+    const listingTitle = (order as any).listings?.title ?? "Your item";
+    const [{ data: sellerProfile }, sellerAuth] = await Promise.all([
+      admin.from("profiles").select("display_name, username").eq("id", (order as any).seller_id).single(),
+      admin.auth.admin.getUserById((order as any).seller_id),
+    ]);
+    const sellerEmail = (sellerAuth as any).data?.user?.email;
+    const sellerName = sellerProfile?.display_name ?? sellerProfile?.username ?? "there";
+
+    if (sellerEmail) {
+      await sendEmail({
+        to: sellerEmail,
+        subject: `Your item has been delivered — ${listingTitle}`,
+        html: itemDeliveredSellerEmail({ sellerName, listingTitle, orderId: order.id }),
+      });
+    }
+
+    await admin.from("notifications").insert({
+      user_id: (order as any).seller_id,
+      type: "item_delivered",
+      title: "Your item has been delivered!",
+      body: `${listingTitle} was delivered. Your payout will be released shortly.`,
+      link: `/orders/${order.id}`,
+    });
+  } catch (err) {
+    console.error("Delivery email/notification failed:", err);
+  }
 
   return NextResponse.json({ received: true });
 }

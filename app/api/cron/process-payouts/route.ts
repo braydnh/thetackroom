@@ -18,6 +18,9 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendEmail } from "@/lib/resend";
+import { payoutReleasedSellerEmail } from "@/lib/emails";
+import { formatAUD } from "@/lib/utils/currency";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01-28.clover" });
 
@@ -35,7 +38,7 @@ export async function GET(req: Request) {
   // Find orders ready for payout
   const { data: orders, error } = await admin
     .from("orders")
-    .select("id, seller_id, seller_payout_amt, stripe_payment_intent_id, stripe_charge_id, listing_id")
+    .select("id, seller_id, seller_payout_amt, stripe_payment_intent_id, stripe_charge_id, listing_id, listings(title)")
     .or(
       `and(status.eq.delivered,dispute_window_ends_at.lte.${now}),` +
       `and(status.eq.dispute_window,dispute_window_ends_at.lte.${now})`
@@ -96,6 +99,40 @@ export async function GET(req: Request) {
 
       // Mark listing as sold
       await admin.from("listings").update({ status: "sold" }).eq("id", (order as any).listing_id);
+
+      // Email seller + in-app notification
+      try {
+        const listingTitle = (order as any).listings?.title ?? "Your item";
+        const [{ data: sellerProfile }, sellerAuth] = await Promise.all([
+          admin.from("profiles").select("display_name, username").eq("id", order.seller_id).single(),
+          admin.auth.admin.getUserById(order.seller_id),
+        ]);
+        const sellerEmail = (sellerAuth as any).data?.user?.email;
+        const sellerName = sellerProfile?.display_name ?? sellerProfile?.username ?? "there";
+
+        if (sellerEmail) {
+          await sendEmail({
+            to: sellerEmail,
+            subject: `Your payout has been released — ${listingTitle}`,
+            html: payoutReleasedSellerEmail({
+              sellerName,
+              listingTitle,
+              amount: formatAUD(order.seller_payout_amt),
+              orderId: order.id,
+            }),
+          });
+        }
+
+        await admin.from("notifications").insert({
+          user_id: order.seller_id,
+          type: "payout_released",
+          title: "Your payout has been released!",
+          body: `Funds for "${listingTitle}" are on their way to your account.`,
+          link: `/orders/${order.id}`,
+        });
+      } catch (err) {
+        console.error(`Payout email/notification failed for order ${order.id}:`, err);
+      }
 
       results.push({ order_id: order.id, status: "ok" });
     } catch (err: any) {

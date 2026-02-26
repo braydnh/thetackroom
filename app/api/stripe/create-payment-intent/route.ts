@@ -100,6 +100,31 @@ export async function POST(req: Request) {
 
     const { commission, sellerPayout } = calculateSellerPayout(subtotal, shippingAmount, commissionPct);
 
+    // Reuse existing pending order if one already exists (prevents duplicates on back-navigation)
+    const { data: existingOrder } = await admin
+      .from("orders")
+      .select("id, stripe_payment_intent_id")
+      .eq("listing_id", listing_id)
+      .eq("buyer_id", user.id)
+      .eq("status", "pending_payment")
+      .eq("pickup_method", pickup_method)
+      .maybeSingle();
+
+    if (existingOrder?.stripe_payment_intent_id) {
+      try {
+        const existingPi = await stripe.paymentIntents.retrieve(existingOrder.stripe_payment_intent_id);
+        if (["requires_payment_method", "requires_confirmation", "requires_action"].includes(existingPi.status)) {
+          return NextResponse.json({
+            client_secret: existingPi.client_secret,
+            order_id: existingOrder.id,
+            amount: existingPi.amount,
+          });
+        }
+      } catch {
+        // If PI can't be retrieved, fall through to create a new one
+      }
+    }
+
     // Create the order row first (draft state)
     const { data: order, error: orderError } = await admin
       .from("orders")

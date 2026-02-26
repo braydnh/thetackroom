@@ -62,6 +62,46 @@ export function welcomeEmail(firstName: string) {
   `);
 }
 
+export function ambassadorApprovedEmail(firstName: string) {
+  return wrapper(`
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      You're now a Tack Room Ambassador! 🎉
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${firstName}, congratulations — your ambassador application has been approved!
+    </p>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Your profile now displays the Ambassador badge and your listings will be featured in our Ambassador section on the homepage.
+    </p>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Start listing your gear and sharing your profile with your community to make the most of your ambassador status.
+    </p>
+    <div style="text-align:center">
+      ${btn("Go to my dashboard", "https://tackroomshop.com.au/selling")}
+    </div>
+  `);
+}
+
+export function ambassadorDeniedEmail(firstName: string, adminNote?: string | null) {
+  return wrapper(`
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      Ambassador application update
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${firstName}, thank you for applying to become a Tack Room Ambassador.
+    </p>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      After reviewing your application, we're unable to approve it at this time.${adminNote ? ` ${adminNote}` : ""}
+    </p>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      You're still very welcome to buy and sell on The Tack Room — and you can reapply in the future.
+    </p>
+    <div style="text-align:center">
+      ${btn("Browse listings", "https://tackroomshop.com.au/listings")}
+    </div>
+  `);
+}
+
 export function newMessageEmail({
   recipientName,
   senderName,
@@ -85,6 +125,172 @@ export function newMessageEmail({
     </div>
     <div style="text-align:center">
       ${btn("Reply to message", `https://tackroomshop.com.au/messages/${conversationId}`)}
+    </div>
+  `);
+}
+
+export function orderConfirmedBuyerEmail({
+  buyerName,
+  listingTitle,
+  sellerName,
+  amount,
+  orderId,
+  pickupMethod,
+}: {
+  buyerName: string;
+  listingTitle: string;
+  sellerName: string;
+  amount: string;
+  orderId: string;
+  pickupMethod: "shipping" | "local_pickup";
+}) {
+  const deliveryText =
+    pickupMethod === "local_pickup"
+      ? "The seller will be in touch to arrange local pickup. Payment is held securely until pickup is confirmed."
+      : "The seller will ship your item shortly and add a tracking number to your order. Payment is held securely until delivery is confirmed.";
+
+  return wrapper(`
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      Order confirmed! 🎉
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${buyerName}, your payment was successful.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;border:1px solid #eee;border-radius:6px;overflow:hidden">
+      <tr style="background:#f9f6f0">
+        <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666;width:40%">Item</td>
+        <td style="padding:12px 16px;font-size:14px;color:#1a2744;font-weight:600">${listingTitle}</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666">Amount paid</td>
+        <td style="padding:12px 16px;font-size:14px;color:#1a2744;font-weight:600">${amount}</td>
+      </tr>
+      <tr style="background:#f9f6f0">
+        <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666">Seller</td>
+        <td style="padding:12px 16px;font-size:14px;color:#1a2744">${sellerName}</td>
+      </tr>
+    </table>
+    <p style="margin:0;font-size:14px;color:#666;line-height:1.6">
+      ${deliveryText}
+    </p>
+    <div style="text-align:center">
+      ${btn("View your order", `https://tackroomshop.com.au/orders/${orderId}`)}
+    </div>
+  `);
+}
+
+export function itemShippedBuyerEmail({
+  buyerName,
+  listingTitle,
+  trackingNumber,
+  carrier,
+  orderId,
+}: {
+  buyerName: string;
+  listingTitle: string;
+  trackingNumber: string;
+  carrier: string;
+  orderId: string;
+}) {
+  const carrierLabels: Record<string, string> = {
+    auspost: "Australia Post",
+    startrack: "StarTrack",
+    sendle: "Sendle",
+    courier_please: "Courier Please",
+    dhl: "DHL",
+    tnt: "TNT",
+    other: "Other carrier",
+  };
+  const carrierLabel = carrierLabels[carrier] ?? carrier;
+
+  return wrapper(`
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      Your item is on its way!
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${buyerName}, great news — your order has been shipped.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;border:1px solid #eee;border-radius:6px;overflow:hidden">
+      <tr style="background:#f9f6f0">
+        <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666;width:40%">Item</td>
+        <td style="padding:12px 16px;font-size:14px;color:#1a2744;font-weight:600">${listingTitle}</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666">Carrier</td>
+        <td style="padding:12px 16px;font-size:14px;color:#1a2744">${carrierLabel}</td>
+      </tr>
+      <tr style="background:#f9f6f0">
+        <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666">Tracking number</td>
+        <td style="padding:12px 16px;font-size:14px;color:#1a2744;font-family:monospace">${trackingNumber}</td>
+      </tr>
+    </table>
+    <p style="margin:0;font-size:14px;color:#666;line-height:1.6">
+      Payment is held securely and will be released to the seller once delivery is confirmed.
+    </p>
+    <div style="text-align:center">
+      ${btn("Track your order", `https://tackroomshop.com.au/orders/${orderId}`)}
+    </div>
+  `);
+}
+
+export function itemDeliveredSellerEmail({
+  sellerName,
+  listingTitle,
+  orderId,
+}: {
+  sellerName: string;
+  listingTitle: string;
+  orderId: string;
+}) {
+  return wrapper(`
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      Your item has been delivered!
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${sellerName}, your item <strong>${listingTitle}</strong> has been marked as delivered.
+    </p>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      There is a 48-hour buyer protection window before your payout is released. If no dispute is raised, your funds will be transferred to your account automatically.
+    </p>
+    <div style="text-align:center">
+      ${btn("View order", `https://tackroomshop.com.au/orders/${orderId}`)}
+    </div>
+  `);
+}
+
+export function payoutReleasedSellerEmail({
+  sellerName,
+  listingTitle,
+  amount,
+  orderId,
+}: {
+  sellerName: string;
+  listingTitle: string;
+  amount: string;
+  orderId: string;
+}) {
+  return wrapper(`
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      Your payout is on its way!
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${sellerName}, your payout for <strong>${listingTitle}</strong> has been released.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;border:1px solid #eee;border-radius:6px;overflow:hidden">
+      <tr style="background:#f9f6f0">
+        <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666;width:40%">Item</td>
+        <td style="padding:12px 16px;font-size:14px;color:#1a2744;font-weight:600">${listingTitle}</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666">Payout amount</td>
+        <td style="padding:12px 16px;font-size:14px;color:#1a2744;font-weight:600">${amount}</td>
+      </tr>
+    </table>
+    <p style="margin:0;font-size:14px;color:#666;line-height:1.6">
+      The funds will arrive in your connected Stripe account within 1–2 business days.
+    </p>
+    <div style="text-align:center">
+      ${btn("View order", `https://tackroomshop.com.au/orders/${orderId}`)}
     </div>
   `);
 }
