@@ -13,7 +13,7 @@ export function Logo({ variant = "full", theme = "light", className, href = "/" 
   const src = theme === "dark" ? "/New_dark_v2.png" : "/New_light.png";
 
   // Crop vertical whitespace by clipping the height, but allow full natural width
-  const containerH = variant === "monogram" ? 40 : 96;
+  const containerH = variant === "monogram" ? 40 : 78;
   const imageH     = variant === "monogram" ? 65 : 180;
 
   return (
