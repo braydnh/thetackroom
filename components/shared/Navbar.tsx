@@ -14,46 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Logo } from "./Logo";
-
-const shopSections = [
-  {
-    label: "Horse",
-    href: "/listings?category=horse",
-    items: [
-      { label: "Shop All Horse", href: "/listings?category=horse" },
-      { label: "Saddles", href: "/listings?category=horse&sub=saddles" },
-      { label: "Girths", href: "/listings?category=horse&sub=girths" },
-      { label: "Stirrups & Leathers", href: "/listings?category=horse&sub=stirrups-leathers" },
-      { label: "Saddle Pads", href: "/listings?category=horse&sub=saddle-pads" },
-      { label: "Bridles & Accessories", href: "/listings?category=horse&sub=bridles" },
-      { label: "Horse Boots & Bandages", href: "/listings?category=horse&sub=boots-bandages" },
-      { label: "Rugs", href: "/listings?category=horse&sub=rugs" },
-      { label: "Stable & Handling", href: "/listings?category=horse&sub=stable-handling" },
-      { label: "Training & Performance", href: "/listings?category=horse&sub=training" },
-    ],
-  },
-  {
-    label: "Rider",
-    href: "/listings?category=rider",
-    items: [
-      { label: "Shop All Rider", href: "/listings?category=rider" },
-      { label: "Clothing", href: "/listings?category=rider&sub=clothing" },
-      { label: "Footwear", href: "/listings?category=rider&sub=footwear" },
-      { label: "Helmets & Safety", href: "/listings?category=rider&sub=helmets-safety" },
-      { label: "Rider Accessories", href: "/listings?category=rider&sub=rider-accessories" },
-    ],
-  },
-  {
-    label: "Stable",
-    href: "/listings?category=stable",
-    items: [
-      { label: "Shop All Stable", href: "/listings?category=stable" },
-      { label: "Horse Care", href: "/listings?category=stable&sub=horse-care" },
-      { label: "Grooming", href: "/listings?category=stable&sub=grooming" },
-      { label: "Stable Equipment", href: "/listings?category=stable&sub=stable-equipment" },
-    ],
-  },
-];
+import { CATEGORIES, type CategoryConfig } from "@/lib/categories";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -152,36 +113,79 @@ function NotificationBell({ unreadNotifications = 0 }: { unreadNotifications: nu
 }
 
 function MobileShopSection({
-  section,
+  category,
   onClose,
 }: {
-  section: (typeof shopSections)[0];
+  category: CategoryConfig;
   onClose: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   return (
     <div>
       <button
         className="w-full flex items-center justify-between rounded-md px-4 py-3 text-sm font-medium text-cream hover:bg-olive-light"
         onClick={() => setExpanded(!expanded)}
       >
-        {section.label}
+        {category.label}
         <ChevronDown
           className={`h-4 w-4 opacity-70 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
         />
       </button>
       {expanded && (
         <div className="pb-1">
-          {section.items.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className="block rounded-md py-2.5 pl-8 pr-4 text-sm text-cream/70 hover:text-cream hover:bg-olive-light"
-              onClick={onClose}
-            >
-              {item.label}
-            </Link>
-          ))}
+          <Link
+            href={`/listings?category=${category.value}`}
+            className="block rounded-md py-2.5 pl-8 pr-4 text-sm text-cream/70 hover:text-cream hover:bg-olive-light"
+            onClick={onClose}
+          >
+            Shop All {category.label}
+          </Link>
+          {category.groups.map((group) =>
+            group.items.length > 0 ? (
+              <div key={group.value}>
+                <button
+                  className="w-full flex items-center justify-between rounded-md py-2.5 pl-8 pr-4 text-sm text-cream/70 hover:text-cream hover:bg-olive-light"
+                  onClick={() => setExpandedGroup(expandedGroup === group.value ? null : group.value)}
+                >
+                  {group.label}
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 opacity-60 transition-transform duration-200 ${expandedGroup === group.value ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {expandedGroup === group.value && (
+                  <div>
+                    <Link
+                      href={`/listings?category=${category.value}&sub=${group.value}`}
+                      className="block rounded-md py-2 pl-14 pr-4 text-xs text-cream/60 hover:text-cream hover:bg-olive-light"
+                      onClick={onClose}
+                    >
+                      All {group.label}
+                    </Link>
+                    {group.items.map((item) => (
+                      <Link
+                        key={item.value}
+                        href={`/listings?category=${category.value}&sub=${item.value}`}
+                        className="block rounded-md py-2 pl-14 pr-4 text-xs text-cream/60 hover:text-cream hover:bg-olive-light"
+                        onClick={onClose}
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                key={group.value}
+                href={`/listings?category=${category.value}&sub=${group.value}`}
+                className="block rounded-md py-2.5 pl-8 pr-4 text-sm text-cream/70 hover:text-cream hover:bg-olive-light"
+                onClick={onClose}
+              >
+                {group.label}
+              </Link>
+            )
+          )}
         </div>
       )}
     </div>
@@ -191,6 +195,7 @@ function MobileShopSection({
 function ShopMegaMenu() {
   const [open, setOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [activeGroupIdx, setActiveGroupIdx] = useState<number | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleMouseEnter = () => {
@@ -201,6 +206,9 @@ function ShopMegaMenu() {
   const handleMouseLeave = () => {
     closeTimer.current = setTimeout(() => setOpen(false), 150);
   };
+
+  const activeCat = CATEGORIES[activeIdx];
+  const activeGroup = activeGroupIdx !== null ? activeCat.groups[activeGroupIdx] : null;
 
   return (
     <div
@@ -215,7 +223,7 @@ function ShopMegaMenu() {
 
       {open && (
         <div className="absolute top-full left-0 mt-1 flex rounded-xl border border-border bg-white shadow-lg overflow-hidden z-50">
-          {/* Left column — top-level categories */}
+          {/* Column 1 — top-level categories */}
           <div className="w-44 border-r border-border py-2">
             <Link
               href="/listings"
@@ -232,33 +240,67 @@ function ShopMegaMenu() {
               Under $100
             </Link>
             <div className="my-1 border-t border-border" />
-            {shopSections.map((section, i) => (
+            {CATEGORIES.map((cat, i) => (
               <button
-                key={section.label}
-                onMouseEnter={() => setActiveIdx(i)}
+                key={cat.value}
+                onMouseEnter={() => { setActiveIdx(i); setActiveGroupIdx(null); }}
                 className={`w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium text-left transition-colors ${
                   activeIdx === i ? "bg-muted text-navy" : "text-muted-foreground hover:bg-muted/50 hover:text-navy"
                 }`}
               >
-                {section.label}
+                {cat.label}
                 <ChevronRight className="h-3.5 w-3.5 opacity-50" />
               </button>
             ))}
           </div>
 
-          {/* Right column — subcategories of active section */}
-          <div className="w-52 py-2">
-            {shopSections[activeIdx].items.map((item) => (
+          {/* Column 2 — groups for active category */}
+          <div className="w-52 border-r border-border py-2">
+            <Link
+              href={`/listings?category=${activeCat.value}`}
+              onClick={() => setOpen(false)}
+              className="block px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted/50 hover:text-navy transition-colors"
+            >
+              Shop All {activeCat.label}
+            </Link>
+            {activeCat.groups.map((group, j) => (
               <Link
-                key={item.label}
-                href={item.href}
+                key={group.value}
+                href={`/listings?category=${activeCat.value}&sub=${group.value}`}
                 onClick={() => setOpen(false)}
-                className="block px-4 py-2.5 text-sm text-navy hover:bg-muted transition-colors"
+                onMouseEnter={() => setActiveGroupIdx(j)}
+                className={`flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
+                  activeGroupIdx === j ? "bg-muted text-navy font-medium" : "text-navy hover:bg-muted"
+                }`}
               >
-                {item.label}
+                {group.label}
+                {group.items.length > 0 && <ChevronRight className="h-3.5 w-3.5 opacity-50" />}
               </Link>
             ))}
           </div>
+
+          {/* Column 3 — sub-items for hovered group (only if it has children) */}
+          {activeGroup && activeGroup.items.length > 0 && (
+            <div className="w-52 py-2">
+              <Link
+                href={`/listings?category=${activeCat.value}&sub=${activeGroup.value}`}
+                onClick={() => setOpen(false)}
+                className="block px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted/50 hover:text-navy transition-colors"
+              >
+                All {activeGroup.label}
+              </Link>
+              {activeGroup.items.map((item) => (
+                <Link
+                  key={item.value}
+                  href={`/listings?category=${activeCat.value}&sub=${item.value}`}
+                  onClick={() => setOpen(false)}
+                  className="block px-4 py-2.5 text-sm text-navy hover:bg-muted transition-colors"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -306,8 +348,8 @@ export function Navbar({ user, unreadMessages = 0, unreadNotifications = 0 }: Na
               <Link href="/listings?max=100" className="rounded-md px-4 py-3 text-sm font-medium text-cream hover:bg-olive-light" onClick={() => setMobileOpen(false)}>
                 Under $100
               </Link>
-              {shopSections.map((section) => (
-                <MobileShopSection key={section.label} section={section} onClose={() => setMobileOpen(false)} />
+              {CATEGORIES.map((cat) => (
+                <MobileShopSection key={cat.value} category={cat} onClose={() => setMobileOpen(false)} />
               ))}
 
               <Link href="/selling/listings/new" className="rounded-md px-4 py-3 text-sm font-medium text-cream hover:bg-olive-light" onClick={() => setMobileOpen(false)}>
