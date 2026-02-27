@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { formatAUD } from "@/lib/utils/currency";
 import { toast } from "sonner";
-import { Loader2, Zap, Home, Search, Check } from "lucide-react";
+import { Loader2, Zap, Home, Search, Check, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
@@ -62,6 +62,12 @@ export default function BoostListingPage() {
   if (clientSecret) {
     return (
       <div className="mx-auto max-w-md px-4 py-10">
+        <button
+          onClick={() => setClientSecret(null)}
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-navy mb-6"
+        >
+          <ChevronLeft className="h-4 w-4" /> Back
+        </button>
         <h1
           className="text-2xl font-bold text-navy mb-2"
           style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
@@ -80,6 +86,12 @@ export default function BoostListingPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
+      <Link
+        href={`/selling/listings/${listingId}/edit`}
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-navy mb-6"
+      >
+        <ChevronLeft className="h-4 w-4" /> Back to listing
+      </Link>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Zap className="h-5 w-5 text-olive" />
