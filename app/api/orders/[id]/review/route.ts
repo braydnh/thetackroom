@@ -86,20 +86,15 @@ export async function POST(
   const sellerId = (order as any).seller_id;
   const listingTitle = (order as any).listings?.title ?? "your listing";
 
-  const [{ data: sellerProfile }, sellerAuth] = await Promise.all([
+  const [{ data: sellerProfile }, { data: sellerAuthData }, { data: buyerProfile }] = await Promise.all([
     admin.from("profiles").select("username, display_name").eq("id", sellerId).single(),
     admin.auth.admin.getUserById(sellerId),
+    admin.from("profiles").select("username, display_name").eq("id", user.id).single(),
   ]);
-
-  const { data: buyerProfile } = await admin
-    .from("profiles")
-    .select("username, display_name")
-    .eq("id", user.id)
-    .single();
 
   const sellerName = sellerProfile?.display_name || sellerProfile?.username || "there";
   const buyerName = buyerProfile?.display_name || buyerProfile?.username || "A buyer";
-  const sellerEmail = sellerAuth.user?.email;
+  const sellerEmail = sellerAuthData.user?.email;
 
   // In-app notification
   await admin.from("notifications").insert({
