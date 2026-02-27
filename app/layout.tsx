@@ -35,6 +35,19 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
 };
 
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "The Tack Room AU",
+  url: "https://www.tackroomshop.com.au",
+  logo: "https://www.tackroomshop.com.au/apple-touch-icon.png",
+  sameAs: [
+    "https://www.instagram.com/thetackroom.au",
+    "https://www.facebook.com/people/The-Tack-Room-AU",
+    "https://www.tiktok.com/@thetackroom.au",
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -43,6 +56,10 @@ export default function RootLayout({
   return (
     <html lang="en-AU">
       <body className={`${inter.variable} ${playfair.variable} font-sans antialiased`}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
         {children}
         <Toaster richColors position="top-right" />
       </body>
