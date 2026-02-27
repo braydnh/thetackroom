@@ -19,7 +19,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/resend";
-import { payoutReleasedSellerEmail } from "@/lib/emails";
+import { payoutReleasedSellerEmail, leaveReviewBuyerEmail } from "@/lib/emails";
 import { formatAUD } from "@/lib/utils/currency";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01-28.clover" });
@@ -38,7 +38,7 @@ export async function GET(req: Request) {
   // Find orders ready for payout
   const { data: orders, error } = await admin
     .from("orders")
-    .select("id, seller_id, seller_payout_amt, stripe_payment_intent_id, stripe_charge_id, listing_id, listings(title)")
+    .select("id, seller_id, buyer_id, seller_payout_amt, stripe_payment_intent_id, stripe_charge_id, listing_id, listings(title)")
     .or(
       `and(status.eq.delivered,dispute_window_ends_at.lte.${now}),` +
       `and(status.eq.dispute_window,dispute_window_ends_at.lte.${now})`
@@ -131,6 +131,35 @@ export async function GET(req: Request) {
           type: "payout_released",
           title: "Your payout has been released!",
           body: `Funds for "${listingTitle}" are on their way to your account.`,
+          link: `/orders/${order.id}`,
+        });
+
+        // Email buyer — prompt to leave a review
+        const [{ data: buyerProfile }, buyerAuth] = await Promise.all([
+          admin.from("profiles").select("display_name, username").eq("id", (order as any).buyer_id).single(),
+          admin.auth.admin.getUserById((order as any).buyer_id),
+        ]);
+        const buyerEmail = (buyerAuth as any).data?.user?.email;
+        const buyerName = buyerProfile?.display_name ?? buyerProfile?.username ?? "there";
+
+        if (buyerEmail) {
+          await sendEmail({
+            to: buyerEmail,
+            subject: `How was your order? Leave a review — ${listingTitle}`,
+            html: leaveReviewBuyerEmail({
+              buyerName,
+              listingTitle,
+              sellerName,
+              orderId: order.id,
+            }),
+          });
+        }
+
+        await admin.from("notifications").insert({
+          user_id: (order as any).buyer_id,
+          type: "review_prompt",
+          title: "How was your order?",
+          body: `Leave a review for "${listingTitle}" and help the community.`,
           link: `/orders/${order.id}`,
         });
       } catch (err) {

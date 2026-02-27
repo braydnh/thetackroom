@@ -337,3 +337,66 @@ export function newOrderEmail({
     </div>
   `);
 }
+
+export function itemDeliveredBuyerEmail({
+  buyerName,
+  listingTitle,
+  disputeWindowEndsAt,
+  orderId,
+}: {
+  buyerName: string;
+  listingTitle: string;
+  disputeWindowEndsAt: string;
+  orderId: string;
+}) {
+  const deadline = new Date(disputeWindowEndsAt).toLocaleString("en-AU", {
+    timeZone: "Australia/Sydney",
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
+  return wrapper(`
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      Your item has been delivered!
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${buyerName}, <strong>${listingTitle}</strong> has been marked as delivered.
+    </p>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      If there's an issue with your order, you have until <strong>${deadline} AEDT</strong> to raise a dispute. After this window closes, the payment will be automatically released to the seller.
+    </p>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      If everything looks good, no action is needed — the seller will be paid out automatically.
+    </p>
+    <div style="text-align:center">
+      ${btn("View order", `https://tackroomshop.com.au/orders/${orderId}`)}
+    </div>
+  `);
+}
+
+export function leaveReviewBuyerEmail({
+  buyerName,
+  listingTitle,
+  sellerName,
+  orderId,
+}: {
+  buyerName: string;
+  listingTitle: string;
+  sellerName: string;
+  orderId: string;
+}) {
+  return wrapper(`
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      How was your order?
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${buyerName}, your order for <strong>${listingTitle}</strong> from ${sellerName} is now complete.
+    </p>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Reviews help other buyers in the community make confident decisions. It only takes a moment — let others know about your experience!
+    </p>
+    <div style="text-align:center">
+      ${btn("Leave a review", `https://tackroomshop.com.au/orders/${orderId}`)}
+    </div>
+  `);
+}

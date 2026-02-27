@@ -14,7 +14,7 @@ import { NextResponse } from "next/server";
 import { createHmac } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/resend";
-import { itemDeliveredSellerEmail } from "@/lib/emails";
+import { itemDeliveredSellerEmail, itemDeliveredBuyerEmail } from "@/lib/emails";
 
 function verifyHmac(body: string, signature: string, secret: string): boolean {
   const expected = createHmac("sha256", secret).update(body).digest("hex");
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
   const admin = createAdminClient();
 
   // Find order — try by order_id from custom_fields first, then by aftership_tracking_id
-  let query = admin.from("orders").select("id, status, seller_id, listing_id, listings(title)");
+  let query = admin.from("orders").select("id, status, seller_id, buyer_id, listing_id, listings(title)");
   if (orderId) {
     query = query.eq("id", orderId) as any;
   } else {
@@ -119,6 +119,30 @@ export async function POST(req: Request) {
       type: "item_delivered",
       title: "Your item has been delivered!",
       body: `${listingTitle} was delivered. Your payout will be released shortly.`,
+      link: `/orders/${order.id}`,
+    });
+
+    // Email buyer + in-app notification (dispute window)
+    const [{ data: buyerProfile }, buyerAuth] = await Promise.all([
+      admin.from("profiles").select("display_name, username").eq("id", (order as any).buyer_id).single(),
+      admin.auth.admin.getUserById((order as any).buyer_id),
+    ]);
+    const buyerEmail = (buyerAuth as any).data?.user?.email;
+    const buyerName = buyerProfile?.display_name ?? buyerProfile?.username ?? "there";
+
+    if (buyerEmail) {
+      await sendEmail({
+        to: buyerEmail,
+        subject: `Your item has been delivered — ${listingTitle}`,
+        html: itemDeliveredBuyerEmail({ buyerName, listingTitle, disputeWindowEndsAt, orderId: order.id }),
+      });
+    }
+
+    await admin.from("notifications").insert({
+      user_id: (order as any).buyer_id,
+      type: "dispute_window",
+      title: "Your item has been delivered!",
+      body: `You have 48 hours to raise a dispute for "${listingTitle}". After that, the seller will be paid out.`,
       link: `/orders/${order.id}`,
     });
   } catch (err) {
