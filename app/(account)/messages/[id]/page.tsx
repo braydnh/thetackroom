@@ -5,10 +5,31 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Send, Loader2 } from "lucide-react";
+import { ChevronLeft, Send, Loader2, ShieldAlert } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+const OFF_PLATFORM_PATTERNS = [
+  /\bcash\b/i,
+  /\bpayid\b/i,
+  /\bpay\s+id\b/i,
+  /\bbsb\b/i,
+  /\bbank\s+transfer\b/i,
+  /\bbank\s+account\b/i,
+  /\bbank\s+deposit\b/i,
+  /\beft\b/i,
+  /\bvenmo\b/i,
+  /\bwestern\s+union\b/i,
+  /\bmoneygram\b/i,
+  /\b04\d{2}[\s-]?\d{3}[\s-]?\d{3}\b/, // Australian mobile numbers
+  /\b\d{10,}\b/, // 10+ consecutive digits (account/BSB combos)
+  /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/, // email addresses
+];
+
+function containsOffPlatformKeywords(text: string): boolean {
+  return OFF_PLATFORM_PATTERNS.some((p) => p.test(text));
+}
 
 interface Message {
   id: string;
@@ -278,18 +299,25 @@ export default function MessageThreadPage() {
                 </div>
               )}
               <div className={cn("flex", isMe ? "justify-end" : "justify-start")}>
-                <div
-                  className={cn(
-                    "max-w-[75%] rounded-2xl px-4 py-2 text-sm",
-                    isMe
-                      ? "bg-olive text-cream rounded-br-sm"
-                      : "bg-white border border-border text-navy rounded-bl-sm"
+                <div className="flex flex-col">
+                  <div
+                    className={cn(
+                      "max-w-[75%] rounded-2xl px-4 py-2 text-sm",
+                      isMe
+                        ? "bg-olive text-cream rounded-br-sm"
+                        : "bg-white border border-border text-navy rounded-bl-sm"
+                    )}
+                  >
+                    <p className="whitespace-pre-wrap break-words">{msg.body}</p>
+                    <p className={cn("text-[10px] mt-1", isMe ? "text-cream/70 text-right" : "text-muted-foreground")}>
+                      {formatTime(msg.created_at)}
+                    </p>
+                  </div>
+                  {containsOffPlatformKeywords(msg.body) && (
+                    <p className={cn("text-[10px] mt-1 flex items-center gap-0.5 text-amber-600", isMe ? "justify-end" : "justify-start")}>
+                      <ShieldAlert className="h-2.5 w-2.5" /> Off-platform payment — not covered by buyer protection
+                    </p>
                   )}
-                >
-                  <p className="whitespace-pre-wrap break-words">{msg.body}</p>
-                  <p className={cn("text-[10px] mt-1", isMe ? "text-cream/70 text-right" : "text-muted-foreground")}>
-                    {formatTime(msg.created_at)}
-                  </p>
                 </div>
               </div>
             </div>
@@ -297,6 +325,16 @@ export default function MessageThreadPage() {
         })}
         <div ref={bottomRef} />
       </div>
+
+      {/* Off-platform payment warning banner */}
+      {containsOffPlatformKeywords(body) && (
+        <div className="flex items-start gap-2 px-4 sm:px-6 py-2.5 bg-amber-50 border-t border-amber-200 flex-shrink-0">
+          <ShieldAlert className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-700">
+            Off-platform payments aren&apos;t covered by buyer protection. Keep your transaction on The Tack Room to stay safe.
+          </p>
+        </div>
+      )}
 
       {/* Input */}
       <form
