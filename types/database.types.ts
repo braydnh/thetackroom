@@ -697,7 +697,7 @@ export type Database = {
     }
     Enums: {
       featured_slot: "homepage" | "search_top"
-      listing_category: "horse" | "rider" | "sale"
+      listing_category: "horse" | "rider" | "stable" | "sale"
       listing_condition: "new_with_tags" | "like_new" | "good" | "fair" | "worn"
       listing_status:
         | "draft"
@@ -847,7 +847,7 @@ export const Constants = {
   public: {
     Enums: {
       featured_slot: ["homepage", "search_top"],
-      listing_category: ["horse", "rider", "sale"],
+      listing_category: ["horse", "rider", "stable", "sale"],
       listing_condition: ["new_with_tags", "like_new", "good", "fair", "worn"],
       listing_status: [
         "draft",
@@ -879,7 +879,7 @@ export const Constants = {
 export type UserRole = "buyer" | "seller" | "admin";
 export type ListingStatus = "draft" | "active" | "reserved" | "sold" | "suspended" | "deleted";
 export type ListingCondition = "new_with_tags" | "like_new" | "good" | "fair" | "worn";
-export type ListingCategory = "horse" | "rider" | "sale";
+export type ListingCategory = "horse" | "rider" | "stable" | "sale";
 export type OrderStatus =
   | "pending_payment"
   | "payment_captured"

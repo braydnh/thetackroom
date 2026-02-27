@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { FeaturedListings } from "@/components/listings/FeaturedListings";
 import type { ListingCardData } from "@/components/listings/ListingCard";
 import type { ListingCondition, ListingCategory } from "@/types/database.types";
+import { expandSubValues } from "@/lib/categories";
 
 const CATEGORY_PILLS = [
   { label: "All", href: "/listings" },
@@ -20,7 +21,7 @@ const CATEGORY_PILLS = [
   { label: "Clothing", href: "/listings?category=rider&sub=clothing" },
   { label: "Helmets", href: "/listings?category=rider&sub=helmets-safety" },
   { label: "Footwear", href: "/listings?category=rider&sub=footwear" },
-  { label: "Sale & Deals", href: "/listings?category=sale" },
+  { label: "Under $100", href: "/listings?max=100" },
 ];
 
 interface SearchParams {
@@ -36,9 +37,9 @@ interface SearchParams {
 
 function buildTitle(params: SearchParams): string {
   if (params.q) return `"${params.q}"`;
-  if (params.category === "horse") return "For the Horse";
-  if (params.category === "rider") return "For the Rider";
-  if (params.category === "sale") return "Sale & Deals";
+  if (params.category === "horse") return "Horse";
+  if (params.category === "rider") return "Rider";
+  if (params.category === "stable") return "Stable";
   return "All Listings";
 }
 
@@ -74,7 +75,9 @@ export default async function ListingsPage({
             {CATEGORY_PILLS.map((pill) => {
               const isActive =
                 pill.href === "/listings"
-                  ? !params.category && !params.sub
+                  ? !params.category && !params.sub && !params.max
+                  : pill.href === "/listings?max=100"
+                  ? params.max === "100" && !params.category
                   : pill.href === `/listings?category=${params.category}&sub=${params.sub}` ||
                     pill.href === `/listings?category=${params.category}`;
               return (
@@ -185,9 +188,10 @@ async function ListingsContent({ params, excludeIds = [] }: { params: SearchPara
     query = query.eq("category", params.category as ListingCategory);
   }
 
-  const subs = params.sub
+  const rawSubs = params.sub
     ? Array.isArray(params.sub) ? params.sub : [params.sub]
     : [];
+  const subs = rawSubs.length > 0 ? expandSubValues(rawSubs) : [];
   if (subs.length === 1) {
     query = query.eq("subcategory", subs[0]);
   } else if (subs.length > 1) {

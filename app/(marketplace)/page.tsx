@@ -19,7 +19,7 @@ const CATEGORY_PILLS = [
   { label: "Clothing", href: "/listings?category=rider&sub=clothing" },
   { label: "Helmets", href: "/listings?category=rider&sub=helmets-safety" },
   { label: "Footwear", href: "/listings?category=rider&sub=footwear" },
-  { label: "Sale & Deals", href: "/listings?category=sale" },
+  { label: "Under $100", href: "/listings?max=100" },
 ];
 
 const TRUST_ITEMS = [

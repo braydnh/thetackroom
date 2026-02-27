@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
+import { CATEGORIES } from "@/lib/categories";
 
 const CONDITIONS = [
   { value: "new_with_tags", label: "New with tags" },
@@ -14,22 +15,6 @@ const CONDITIONS = [
   { value: "fair", label: "Fair" },
   { value: "worn", label: "Well loved" },
 ];
-
-const SUBCATEGORIES: Record<string, { value: string; label: string }[]> = {
-  horse: [
-    { value: "saddles", label: "Saddles" },
-    { value: "girths", label: "Girths" },
-    { value: "bridles", label: "Bridles & Accessories" },
-    { value: "boots-bandages", label: "Boots & Bandages" },
-    { value: "rugs", label: "Rugs" },
-    { value: "lunging-training", label: "Lunging & Training" },
-  ],
-  rider: [
-    { value: "clothing", label: "Clothing" },
-    { value: "footwear", label: "Footwear" },
-    { value: "helmets-safety", label: "Helmets & Safety" },
-  ],
-};
 
 export function FilterSidebar() {
   const router = useRouter();
@@ -41,7 +26,8 @@ export function FilterSidebar() {
   const subcats = searchParams.getAll("sub");
   const conditions = searchParams.getAll("condition");
   const hasFilters = category || subcats.length || conditions.length || searchParams.get("min") || searchParams.get("max");
-  const subOptions = SUBCATEGORIES[category] ?? [];
+  const activeCategoryConfig = CATEGORIES.find((c) => c.value === category);
+  const subOptions = activeCategoryConfig?.groups ?? [];
 
   // Debounced price inputs — local state syncs to URL after 600ms of inactivity
   const [minPrice, setMinPrice] = useState(searchParams.get("min") ?? "");
@@ -125,9 +111,7 @@ export function FilterSidebar() {
         <div className="flex flex-col gap-1">
           {[
             { value: "", label: "All" },
-            { value: "horse", label: "For the Horse" },
-            { value: "rider", label: "For the Rider" },
-            { value: "sale", label: "Sale & Deals" },
+            ...CATEGORIES.map((c) => ({ value: c.value, label: c.label })),
           ].map((c) => (
             <button
               key={c.value}
@@ -144,24 +128,24 @@ export function FilterSidebar() {
         </div>
       </div>
 
-      {/* Subcategories */}
+      {/* Subcategory groups */}
       {subOptions.length > 0 && (
         <>
           <Separator />
           <div className="space-y-2">
             <Label className="text-xs uppercase tracking-wide text-muted-foreground">Type</Label>
             <div className="flex flex-col gap-1">
-              {subOptions.map((s) => (
+              {subOptions.map((group) => (
                 <button
-                  key={s.value}
-                  onClick={() => toggleArrayFilter("sub", s.value)}
+                  key={group.value}
+                  onClick={() => toggleArrayFilter("sub", group.value)}
                   className={`text-left px-2 py-1.5 rounded-md text-sm transition-colors ${
-                    subcats.includes(s.value)
+                    subcats.includes(group.value)
                       ? "bg-olive/10 text-olive font-medium"
                       : "text-navy hover:bg-muted"
                   }`}
                 >
-                  {s.label}
+                  {group.label}
                 </button>
               ))}
             </div>

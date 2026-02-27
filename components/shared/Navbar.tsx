@@ -17,33 +17,40 @@ import { Logo } from "./Logo";
 
 const shopSections = [
   {
-    label: "For the Horse",
+    label: "Horse",
     href: "/listings?category=horse",
     items: [
       { label: "Shop All Horse", href: "/listings?category=horse" },
       { label: "Saddles", href: "/listings?category=horse&sub=saddles" },
       { label: "Girths", href: "/listings?category=horse&sub=girths" },
+      { label: "Stirrups & Leathers", href: "/listings?category=horse&sub=stirrups-leathers" },
+      { label: "Saddle Pads", href: "/listings?category=horse&sub=saddle-pads" },
       { label: "Bridles & Accessories", href: "/listings?category=horse&sub=bridles" },
-      { label: "Boots & Bandages", href: "/listings?category=horse&sub=boots-bandages" },
+      { label: "Horse Boots & Bandages", href: "/listings?category=horse&sub=boots-bandages" },
       { label: "Rugs", href: "/listings?category=horse&sub=rugs" },
-      { label: "Lunging & Training", href: "/listings?category=horse&sub=lunging-training" },
+      { label: "Stable & Handling", href: "/listings?category=horse&sub=stable-handling" },
+      { label: "Training & Performance", href: "/listings?category=horse&sub=training" },
     ],
   },
   {
-    label: "For the Rider",
+    label: "Rider",
     href: "/listings?category=rider",
     items: [
       { label: "Shop All Rider", href: "/listings?category=rider" },
       { label: "Clothing", href: "/listings?category=rider&sub=clothing" },
       { label: "Footwear", href: "/listings?category=rider&sub=footwear" },
       { label: "Helmets & Safety", href: "/listings?category=rider&sub=helmets-safety" },
+      { label: "Rider Accessories", href: "/listings?category=rider&sub=rider-accessories" },
     ],
   },
   {
-    label: "Sale & Deals",
-    href: "/listings?category=sale",
+    label: "Stable",
+    href: "/listings?category=stable",
     items: [
-      { label: "Browse Sale & Deals", href: "/listings?category=sale" },
+      { label: "Shop All Stable", href: "/listings?category=stable" },
+      { label: "Horse Care", href: "/listings?category=stable&sub=horse-care" },
+      { label: "Grooming", href: "/listings?category=stable&sub=grooming" },
+      { label: "Stable Equipment", href: "/listings?category=stable&sub=stable-equipment" },
     ],
   },
 ];
@@ -210,6 +217,21 @@ function ShopMegaMenu() {
         <div className="absolute top-full left-0 mt-1 flex rounded-xl border border-border bg-white shadow-lg overflow-hidden z-50">
           {/* Left column — top-level categories */}
           <div className="w-44 border-r border-border py-2">
+            <Link
+              href="/listings"
+              onClick={() => setOpen(false)}
+              className="w-full flex items-center px-4 py-2.5 text-sm font-medium text-left text-muted-foreground hover:bg-muted/50 hover:text-navy transition-colors"
+            >
+              Shop All
+            </Link>
+            <Link
+              href="/listings?max=100"
+              onClick={() => setOpen(false)}
+              className="w-full flex items-center px-4 py-2.5 text-sm font-medium text-left text-muted-foreground hover:bg-muted/50 hover:text-navy transition-colors"
+            >
+              Under $100
+            </Link>
+            <div className="my-1 border-t border-border" />
             {shopSections.map((section, i) => (
               <button
                 key={section.label}
@@ -277,7 +299,13 @@ export function Navbar({ user, unreadMessages = 0, unreadNotifications = 0 }: Na
                 Home
               </Link>
 
-              {/* Shop — collapsible accordion sections */}
+              {/* Shop — quick links + collapsible accordion sections */}
+              <Link href="/listings" className="rounded-md px-4 py-3 text-sm font-medium text-cream hover:bg-olive-light" onClick={() => setMobileOpen(false)}>
+                Shop All
+              </Link>
+              <Link href="/listings?max=100" className="rounded-md px-4 py-3 text-sm font-medium text-cream hover:bg-olive-light" onClick={() => setMobileOpen(false)}>
+                Under $100
+              </Link>
               {shopSections.map((section) => (
                 <MobileShopSection key={section.label} section={section} onClose={() => setMobileOpen(false)} />
               ))}

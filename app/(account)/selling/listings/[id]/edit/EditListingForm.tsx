@@ -7,34 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { formatAUD, calculateSellerPayout } from "@/lib/utils/currency";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Info, ChevronLeft, Trash2, AlertTriangle } from "lucide-react";
-
-const CATEGORIES = [
-  { value: "horse", label: "For the Horse" },
-  { value: "rider", label: "For the Rider" },
-  { value: "sale", label: "Sale & Deals" },
-];
-
-const SUBCATEGORIES: Record<string, { value: string; label: string }[]> = {
-  horse: [
-    { value: "saddles", label: "Saddles" },
-    { value: "girths", label: "Girths" },
-    { value: "bridles", label: "Bridles & Accessories" },
-    { value: "boots-bandages", label: "Boots & Bandages" },
-    { value: "rugs", label: "Rugs" },
-    { value: "lunging-training", label: "Lunging & Training" },
-  ],
-  rider: [
-    { value: "clothing", label: "Clothing" },
-    { value: "footwear", label: "Footwear" },
-    { value: "helmets-safety", label: "Helmets & Safety" },
-  ],
-};
+import { CATEGORIES } from "@/lib/categories";
 
 const CONDITIONS = [
   { value: "new_with_tags", label: "New with tags", desc: "Unused, tags still attached" },
@@ -285,32 +264,46 @@ export default function EditListingForm({ listing }: { listing: ExistingListing 
         </div>
 
         {/* Category */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label>Category <span className="text-destructive">*</span></Label>
-            <Select value={category} onValueChange={(v) => { setCategory(v); setSubcategory(""); }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {(SUBCATEGORIES[category] ?? []).length > 0 && (
-            <div className="space-y-1.5">
-              <Label>Type</Label>
-              <Select value={subcategory} onValueChange={setSubcategory}>
-                <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
-                <SelectContent>
-                  {SUBCATEGORIES[category].map((s) => (
-                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        {(() => {
+          const activeCatConfig = CATEGORIES.find((c) => c.value === category);
+          return (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Category <span className="text-destructive">*</span></Label>
+                <Select value={category} onValueChange={(v) => { setCategory(v); setSubcategory(""); }}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {(activeCatConfig?.groups ?? []).length > 0 && (
+                <div className="space-y-1.5">
+                  <Label>Type</Label>
+                  <Select value={subcategory} onValueChange={setSubcategory}>
+                    <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                    <SelectContent>
+                      {activeCatConfig!.groups.map((group) => (
+                        <SelectGroup key={group.value}>
+                          <SelectItem value={group.value} className="font-medium">
+                            {group.label}
+                          </SelectItem>
+                          {group.items.map((item) => (
+                            <SelectItem key={item.value} value={item.value} className="pl-8">
+                              {item.label}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          );
+        })()}
 
         {/* Condition */}
         <div className="space-y-2">
