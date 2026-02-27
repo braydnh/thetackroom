@@ -57,7 +57,10 @@ export async function FeaturedListings({
     .in("id", featuredIds)
     .eq("status", "active");
 
-  if (!rows || rows.length === 0) return null;
+  if (!rows || rows.length === 0) {
+    if (!showEmpty) return null;
+    return <FeaturedEmptySlots count={limit} />;
+  }
 
   const listings: ListingCardData[] = (rows as any[]).map((r) => {
     const images: { display_url: string; is_primary: boolean; sort_order: number }[] =
