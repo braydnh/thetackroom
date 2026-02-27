@@ -69,7 +69,7 @@ export default async function AdminUsersPage({
                 </div>
                 <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
                   <span>{u.total_sales} sales</span>
-                  {u.average_rating && <span>{Number(u.average_rating).toFixed(1)} ★</span>}
+                  {Number(u.average_rating) > 0 && <span>{Number(u.average_rating).toFixed(1)} ★</span>}
                   <span>{u.stripe_onboarding_complete ? "Seller" : "Buyer only"}</span>
                   <span>Joined {new Date(u.created_at).toLocaleDateString("en-AU")}</span>
                 </div>
