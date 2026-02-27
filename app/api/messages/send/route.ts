@@ -82,7 +82,7 @@ export async function POST(req: Request) {
         subject: `New message from ${senderProfile?.username ?? "a user"}`,
         html: newMessageEmail({
           recipientName: recipientProfile?.display_name ?? recipientProfile?.username ?? "there",
-          senderName: senderProfile?.username ?? "A user",
+          senderName: senderProfile?.username ?? "a user",
           messagePreview: body.trim().slice(0, 200),
           conversationId: conversation_id,
         }),
