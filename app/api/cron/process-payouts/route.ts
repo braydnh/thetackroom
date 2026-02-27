@@ -101,7 +101,7 @@ export async function GET(req: Request) {
       await admin.from("listings").update({ status: "sold" }).eq("id", (order as any).listing_id);
 
       // Increment seller's total_sales count
-      await admin.rpc("increment_total_sales", { user_id: order.seller_id });
+      await (admin as any).rpc("increment_total_sales", { user_id: order.seller_id });
 
       // Email seller + in-app notification
       try {
