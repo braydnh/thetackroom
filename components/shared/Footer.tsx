@@ -37,7 +37,7 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2 lg:col-span-1">
             <Logo variant="full" theme="dark" />
-            <p className="mt-1 text-sm text-cream/70 leading-relaxed">
+            <p className="mt-0 text-sm text-cream/70 leading-relaxed">
               Where your gear finds its second stride.
             </p>
             <p className="mt-2 text-xs text-cream/50">
