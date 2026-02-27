@@ -10,6 +10,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendEmail } from "@/lib/resend";
+import { newReviewEmail } from "@/lib/emails";
 
 export async function POST(
   req: Request,
@@ -32,7 +34,7 @@ export async function POST(
   // Verify order: must be completed and buyer must be current user
   const { data: order } = await admin
     .from("orders")
-    .select("id, buyer_id, seller_id, status")
+    .select("id, buyer_id, seller_id, status, listing_id, listings(title)")
     .eq("id", id)
     .single();
 
@@ -78,6 +80,50 @@ export async function POST(
       .from("profiles")
       .update({ average_rating: Math.round(avg * 10) / 10 })
       .eq("id", (order as any).seller_id);
+  }
+
+  // Notify the seller
+  const sellerId = (order as any).seller_id;
+  const listingTitle = (order as any).listings?.title ?? "your listing";
+
+  const [{ data: sellerProfile }, sellerAuth] = await Promise.all([
+    admin.from("profiles").select("username, display_name").eq("id", sellerId).single(),
+    admin.auth.admin.getUserById(sellerId),
+  ]);
+
+  const { data: buyerProfile } = await admin
+    .from("profiles")
+    .select("username, display_name")
+    .eq("id", user.id)
+    .single();
+
+  const sellerName = sellerProfile?.display_name || sellerProfile?.username || "there";
+  const buyerName = buyerProfile?.display_name || buyerProfile?.username || "A buyer";
+  const sellerEmail = sellerAuth.user?.email;
+
+  // In-app notification
+  await admin.from("notifications").insert({
+    user_id: sellerId,
+    type: "new_review",
+    title: "New review received",
+    body: `${buyerName} left you a ${rating}-star review for ${listingTitle}.`,
+    url: `/profile/${sellerProfile?.username}`,
+  });
+
+  // Email notification
+  if (sellerEmail) {
+    await sendEmail({
+      to: sellerEmail,
+      subject: `${buyerName} left you a ${rating}-star review`,
+      html: newReviewEmail({
+        sellerName,
+        buyerName,
+        listingTitle,
+        rating,
+        comment,
+        profileUrl: `https://tackroomshop.com.au/profile/${sellerProfile?.username}`,
+      }),
+    });
   }
 
   return NextResponse.json({ success: true });

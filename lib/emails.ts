@@ -374,6 +374,39 @@ export function itemDeliveredBuyerEmail({
   `);
 }
 
+export function newReviewEmail({
+  sellerName,
+  buyerName,
+  listingTitle,
+  rating,
+  comment,
+  profileUrl,
+}: {
+  sellerName: string;
+  buyerName: string;
+  listingTitle: string;
+  rating: number;
+  comment?: string | null;
+  profileUrl: string;
+}) {
+  const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
+  return wrapper(`
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      You received a new review!
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${sellerName}, ${buyerName} left you a review for <strong>${listingTitle}</strong>.
+    </p>
+    <div style="margin:24px 0;padding:20px 24px;background:#f9f6f0;border-radius:8px;border-left:3px solid #1a2744">
+      <p style="margin:0 0 6px;font-size:20px;color:#1a2744;letter-spacing:2px">${stars}</p>
+      ${comment ? `<p style="margin:0;font-size:14px;color:#444;line-height:1.6;font-style:italic">"${comment}"</p>` : ""}
+    </div>
+    <div style="text-align:center">
+      ${btn("View your profile", profileUrl)}
+    </div>
+  `);
+}
+
 export function leaveReviewBuyerEmail({
   buyerName,
   listingTitle,
