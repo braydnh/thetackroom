@@ -177,17 +177,16 @@ export default async function HomePage() {
           </form>
 
           {/* Quick CTAs */}
-          <div className="mt-4 flex justify-center gap-3">
+          <div className="mt-4 flex justify-center gap-2">
             <Link
               href="/listings"
-              className="text-xs text-cream/70 underline underline-offset-2 hover:text-cream transition-colors"
+              className="rounded-md border border-cream/30 bg-cream/10 px-4 py-1.5 text-xs font-medium text-cream/80 hover:bg-cream/20 hover:text-cream transition-colors"
             >
               Browse all listings
             </Link>
-            <span className="text-cream/30">·</span>
             <Link
               href="/selling/listings/new"
-              className="text-xs text-cream/70 underline underline-offset-2 hover:text-cream transition-colors"
+              className="rounded-md border border-cream/30 bg-cream/10 px-4 py-1.5 text-xs font-medium text-cream/80 hover:bg-cream/20 hover:text-cream transition-colors"
             >
               Sell your gear
             </Link>
