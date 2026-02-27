@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { FilterSidebar } from "@/components/listings/FilterSidebar";
+import { SortSelect } from "@/components/listings/SortSelect";
 import { ListingGrid } from "@/components/listings/ListingGrid";
 import { Button } from "@/components/ui/button";
 import { SlidersHorizontal } from "lucide-react";
@@ -47,6 +48,22 @@ export default async function ListingsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
+
+  // Fetch featured listing IDs so we can exclude them from the regular grid
+  let featuredIds: string[] = [];
+  const showFeatured = !params.q && !params.condition && !params.min && !params.max;
+  if (showFeatured) {
+    const supabase = await createClient();
+    const now = new Date().toISOString();
+    const { data: featuredRows } = await supabase
+      .from("featured_listings")
+      .select("listing_id")
+      .eq("slot", "search_top")
+      .lte("starts_at", now)
+      .gt("ends_at", now)
+      .limit(4);
+    featuredIds = featuredRows?.map((r: any) => r.listing_id as string) ?? [];
+  }
 
   return (
     <div>
@@ -118,14 +135,16 @@ export default async function ListingsPage({
           </div>
 
           {/* Featured pinned results — only shown when no search/filter active */}
-          {!params.q && !params.condition && !params.min && !params.max && (
-            <Suspense fallback={null}>
-              <FeaturedListings slot="search_top" limit={4} />
-            </Suspense>
+          {showFeatured && (
+            <div className="mb-8">
+              <Suspense fallback={null}>
+                <FeaturedListings slot="search_top" limit={4} />
+              </Suspense>
+            </div>
           )}
 
           <Suspense fallback={<ListingGrid listings={[]} loading />}>
-            <ListingsContent params={params} />
+            <ListingsContent params={params} excludeIds={featuredIds} />
           </Suspense>
         </div>
       </div>
@@ -134,19 +153,6 @@ export default async function ListingsPage({
   );
 }
 
-function SortSelect({ current }: { current?: string }) {
-  return (
-    <select
-      name="sort"
-      defaultValue={current ?? "newest"}
-      className="rounded-md border border-input bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-olive"
-    >
-      <option value="newest">Newest first</option>
-      <option value="price_asc">Price: Low to High</option>
-      <option value="price_desc">Price: High to Low</option>
-    </select>
-  );
-}
 
 function MobileFilterButton() {
   return (
@@ -157,7 +163,7 @@ function MobileFilterButton() {
   );
 }
 
-async function ListingsContent({ params }: { params: SearchParams }) {
+async function ListingsContent({ params, excludeIds = [] }: { params: SearchParams; excludeIds?: string[] }) {
   const supabase = await createClient();
 
   let query = supabase
@@ -165,9 +171,14 @@ async function ListingsContent({ params }: { params: SearchParams }) {
     .select(
       `id, title, price, condition, brand, size, allows_pickup,
        listing_images(display_url, is_primary, sort_order),
-       profiles!seller_id(username, avatar_url, is_founding_seller)`
+       profiles!seller_id(username, avatar_url, is_founding_seller, is_ambassador)`
     )
     .eq("status", "active");
+
+  // Exclude featured listings already shown above
+  if (excludeIds.length > 0) {
+    query = query.not("id", "in", `(${excludeIds.join(",")})`);
+  }
 
   // Filters
   if (params.category) {
@@ -230,6 +241,7 @@ async function ListingsContent({ params }: { params: SearchParams }) {
       seller_username: seller?.username ?? "unknown",
       seller_avatar: seller?.avatar_url ?? null,
       seller_is_founding: seller?.is_founding_seller ?? false,
+      seller_is_ambassador: seller?.is_ambassador ?? false,
     };
   });
 

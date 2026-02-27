@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useTransition, useState, useEffect, useRef } from "react";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,38 @@ export function FilterSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+
+  const category = searchParams.get("category") ?? "";
+  const subcats = searchParams.getAll("sub");
+  const conditions = searchParams.getAll("condition");
+  const hasFilters = category || subcats.length || conditions.length || searchParams.get("min") || searchParams.get("max");
+  const subOptions = SUBCATEGORIES[category] ?? [];
+
+  // Debounced price inputs — local state syncs to URL after 600ms of inactivity
+  const [minPrice, setMinPrice] = useState(searchParams.get("min") ?? "");
+  const [maxPrice, setMaxPrice] = useState(searchParams.get("max") ?? "");
+  const priceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Keep local price state in sync if URL changes externally (e.g. clear all)
+  useEffect(() => {
+    setMinPrice(searchParams.get("min") ?? "");
+    setMaxPrice(searchParams.get("max") ?? "");
+  }, [searchParams]);
+
+  const commitPrice = useCallback(
+    (min: string, max: string) => {
+      if (priceTimer.current) clearTimeout(priceTimer.current);
+      priceTimer.current = setTimeout(() => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (min) params.set("min", min); else params.delete("min");
+        if (max) params.set("max", max); else params.delete("max");
+        params.delete("page");
+        startTransition(() => router.push(`${pathname}?${params.toString()}`));
+      }, 600);
+    },
+    [router, pathname, searchParams]
+  );
 
   const updateFilter = useCallback(
     (key: string, value: string | null) => {
@@ -44,8 +76,8 @@ export function FilterSidebar() {
       } else {
         params.set(key, value);
       }
-      params.delete("page"); // reset pagination on filter change
-      router.push(`${pathname}?${params.toString()}`);
+      params.delete("page");
+      startTransition(() => router.push(`${pathname}?${params.toString()}`));
     },
     [router, pathname, searchParams]
   );
@@ -61,7 +93,7 @@ export function FilterSidebar() {
         [...current, value].forEach((v) => params.append(key, v));
       }
       params.delete("page");
-      router.push(`${pathname}?${params.toString()}`);
+      startTransition(() => router.push(`${pathname}?${params.toString()}`));
     },
     [router, pathname, searchParams]
   );
@@ -70,19 +102,11 @@ export function FilterSidebar() {
     const params = new URLSearchParams();
     const q = searchParams.get("q");
     if (q) params.set("q", q);
-    router.push(`${pathname}?${params.toString()}`);
+    startTransition(() => router.push(`${pathname}?${params.toString()}`));
   };
 
-  const category = searchParams.get("category") ?? "";
-  const subcats = searchParams.getAll("sub");
-  const conditions = searchParams.getAll("condition");
-  const minPrice = searchParams.get("min") ?? "";
-  const maxPrice = searchParams.get("max") ?? "";
-  const hasFilters = category || subcats.length || conditions.length || minPrice || maxPrice;
-  const subOptions = SUBCATEGORIES[category] ?? [];
-
   return (
-    <aside className="w-full space-y-5">
+    <aside className={`w-full space-y-5 transition-opacity ${isPending ? "opacity-60" : "opacity-100"}`}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="font-semibold text-sm text-navy">Filters</h2>
@@ -180,7 +204,10 @@ export function FilterSidebar() {
               placeholder="Min"
               value={minPrice}
               min={0}
-              onChange={(e) => updateFilter("min", e.target.value || null)}
+              onChange={(e) => {
+                setMinPrice(e.target.value);
+                commitPrice(e.target.value, maxPrice);
+              }}
               className="w-full rounded-md border border-input bg-white pl-5 pr-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-olive"
             />
           </div>
@@ -192,7 +219,10 @@ export function FilterSidebar() {
               placeholder="Max"
               value={maxPrice}
               min={0}
-              onChange={(e) => updateFilter("max", e.target.value || null)}
+              onChange={(e) => {
+                setMaxPrice(e.target.value);
+                commitPrice(minPrice, e.target.value);
+              }}
               className="w-full rounded-md border border-input bg-white pl-5 pr-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-olive"
             />
           </div>
