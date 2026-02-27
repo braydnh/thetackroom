@@ -35,7 +35,7 @@ async function NewestListings() {
     .select(
       `id, title, price, condition, brand, size, allows_pickup,
        listing_images(display_url, is_primary, sort_order),
-       profiles!seller_id(username, avatar_url, is_founding_seller)`
+       profiles!seller_id(username, avatar_url, is_founding_seller, is_ambassador)`
     )
     .eq("status", "active")
     .order("created_at", { ascending: false })
@@ -61,6 +61,7 @@ async function NewestListings() {
       seller_username: seller?.username ?? "unknown",
       seller_avatar: seller?.avatar_url ?? null,
       seller_is_founding: seller?.is_founding_seller ?? false,
+      seller_is_ambassador: seller?.is_ambassador ?? false,
     };
   });
 
@@ -94,7 +95,7 @@ async function getAmbassadorListings(): Promise<AmbassadorListing[]> {
     .order("created_at", { ascending: false })
     .limit(24);
 
-  return (rows ?? [])
+  const listings = (rows ?? [])
     .filter((r: any) => {
       const seller = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
       return seller?.is_ambassador;
@@ -114,6 +115,14 @@ async function getAmbassadorListings(): Promise<AmbassadorListing[]> {
         seller_avatar: seller?.avatar_url ?? null,
       };
     });
+
+  // Shuffle so the carousel order varies on each page load
+  for (let i = listings.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [listings[i], listings[j]] = [listings[j], listings[i]];
+  }
+
+  return listings;
 }
 
 export default async function HomePage() {
@@ -171,14 +180,14 @@ export default async function HomePage() {
           <div className="mt-4 flex justify-center gap-3">
             <Link
               href="/listings"
-              className="text-xs text-cream/60 hover:text-cream underline-offset-2 hover:underline"
+              className="text-xs text-cream/70 underline underline-offset-2 hover:text-cream transition-colors"
             >
               Browse all listings
             </Link>
             <span className="text-cream/30">·</span>
             <Link
               href="/selling/listings/new"
-              className="text-xs text-cream/60 hover:text-cream underline-offset-2 hover:underline"
+              className="text-xs text-cream/70 underline underline-offset-2 hover:text-cream transition-colors"
             >
               Sell your gear
             </Link>

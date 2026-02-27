@@ -52,7 +52,7 @@ export async function FeaturedListings({
     .select(
       `id, title, price, condition, brand, size, allows_pickup,
        listing_images(display_url, is_primary, sort_order),
-       profiles!seller_id(username, avatar_url, is_founding_seller)`
+       profiles!seller_id(username, avatar_url, is_founding_seller, is_ambassador)`
     )
     .in("id", featuredIds)
     .eq("status", "active");
@@ -79,15 +79,32 @@ export async function FeaturedListings({
       seller_username: seller?.username ?? "unknown",
       seller_avatar: seller?.avatar_url ?? null,
       seller_is_founding: seller?.is_founding_seller ?? false,
+      seller_is_ambassador: seller?.is_ambassador ?? false,
       is_featured: true,
     };
   });
+
+  const emptySlots = limit - listings.length;
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
       {listings.map((listing) => (
         <ListingCard key={listing.id} listing={listing} featured />
       ))}
+      {showEmpty && emptySlots > 0 &&
+        Array.from({ length: emptySlots }).map((_, i) => (
+          <Link
+            key={`empty-${i}`}
+            href="/selling"
+            className="group flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-white hover:border-olive hover:bg-olive/5 transition-colors aspect-[3/4] text-center px-4"
+          >
+            <Zap className="h-5 w-5 text-muted-foreground group-hover:text-olive transition-colors" />
+            <span className="text-xs font-medium text-muted-foreground group-hover:text-olive transition-colors">
+              Feature your listing here
+            </span>
+          </Link>
+        ))
+      }
     </div>
   );
 }

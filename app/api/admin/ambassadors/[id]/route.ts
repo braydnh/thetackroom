@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendEmail } from "@/lib/resend";
+import { ambassadorApprovedEmail, ambassadorDeniedEmail } from "@/lib/emails";
 
 // PATCH /api/admin/ambassadors/[id] — approve or deny
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -52,6 +54,32 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       .from("profiles")
       .update({ is_ambassador: false, ambassador_since: null })
       .eq("id", app.user_id);
+  }
+
+  // Send email notification
+  try {
+    const { data: authUser } = await admin.auth.admin.getUserById(app.user_id);
+    const email = authUser?.user?.email;
+    const fullName: string = authUser?.user?.user_metadata?.full_name ?? "";
+    const firstName = fullName.split(" ")[0] || authUser?.user?.user_metadata?.username || "there";
+
+    if (email) {
+      if (action === "approve") {
+        await sendEmail({
+          to: email,
+          subject: "You're now a Tack Room Ambassador! 🎉",
+          html: ambassadorApprovedEmail(firstName),
+        });
+      } else {
+        await sendEmail({
+          to: email,
+          subject: "Your ambassador application",
+          html: ambassadorDeniedEmail(firstName, admin_note?.trim() || null),
+        });
+      }
+    }
+  } catch {
+    // Don't block the response if email fails
   }
 
   return NextResponse.json({ success: true });

@@ -3,9 +3,11 @@ import { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { formatAUD } from "@/lib/utils/currency";
-import { Star, Package, ShoppingBag } from "lucide-react";
+import { Star, Package, ShoppingBag, Pencil } from "lucide-react";
 import { ListingCard } from "@/components/listings/ListingCard";
+import { Button } from "@/components/ui/button";
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username } = await params;
@@ -16,13 +18,19 @@ export default async function SellerProfilePage({ params }: { params: Promise<{ 
   const { username } = await params;
   const admin = createAdminClient();
 
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("id, username, display_name, bio, avatar_url, location, average_rating, total_sales, is_founding_seller, created_at")
-    .eq("username", username)
-    .single();
+  const [{ data: profile }, supabase] = await Promise.all([
+    admin
+      .from("profiles")
+      .select("id, username, display_name, bio, avatar_url, location, average_rating, total_sales, is_founding_seller, is_ambassador, created_at")
+      .eq("username", username)
+      .single(),
+    createClient(),
+  ]);
 
   if (!profile) notFound();
+
+  const { data: { user: currentUser } } = await supabase.auth.getUser();
+  const isOwnProfile = currentUser?.id === (profile as any).id;
 
   // Load active listings and recent reviews in parallel
   const [{ data: listings }, { data: reviews }] = await Promise.all([
@@ -64,21 +72,39 @@ export default async function SellerProfilePage({ params }: { params: Promise<{ 
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1
-              className="text-2xl font-bold text-navy"
-              style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
-            >
-              {(profile as any).display_name ?? `@${(profile as any).username}`}
-            </h1>
-            {(profile as any).is_founding_seller && (
-              <span className="rounded-full bg-olive px-2 py-0.5 text-[10px] font-semibold text-cream flex items-center gap-0.5">
-                <Star className="h-2.5 w-2.5" /> Founding Seller
-              </span>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1
+                  className="text-2xl font-bold text-navy"
+                  style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
+                >
+                  {(profile as any).display_name ?? `@${(profile as any).username}`}
+                </h1>
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                {(profile as any).is_founding_seller && (
+                  <span className="rounded-full bg-olive px-2 py-0.5 text-[10px] font-semibold text-cream flex items-center gap-0.5">
+                    <Star className="h-2.5 w-2.5" /> Founding Seller
+                  </span>
+                )}
+                {(profile as any).is_ambassador && (
+                  <span className="rounded-full bg-navy px-2 py-0.5 text-[10px] font-semibold text-cream flex items-center gap-0.5">
+                    🎖 Ambassador
+                  </span>
+                )}
+              </div>
+            </div>
+            {isOwnProfile && (
+              <Button size="sm" variant="outline" className="gap-1.5 flex-shrink-0" asChild>
+                <Link href="/settings">
+                  <Pencil className="h-3.5 w-3.5" /> Edit Profile
+                </Link>
+              </Button>
             )}
           </div>
 
-          <p className="text-sm text-muted-foreground mt-0.5">@{(profile as any).username}</p>
+          <p className="text-sm text-muted-foreground mt-1">@{(profile as any).username}</p>
 
           {(profile as any).bio && (
             <p className="text-sm text-navy/80 mt-2 max-w-prose">{(profile as any).bio}</p>

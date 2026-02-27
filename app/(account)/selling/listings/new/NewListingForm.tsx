@@ -419,7 +419,7 @@ export default function NewListingForm() {
               </Label>
               <Input
                 id="brand"
-                placeholder="e.g. Bates, Pikeur"
+                placeholder="e.g. Bates, Ariat"
                 value={form.brand}
                 onChange={(e) => set("brand", e.target.value)}
               />

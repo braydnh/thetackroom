@@ -49,7 +49,7 @@ export function AmbassadorActionButtons({ applicationId }: { applicationId: stri
       <Button
         size="sm"
         variant="outline"
-        className="border-red-200 text-red-600 hover:bg-red-50 gap-1.5"
+        className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-600 gap-1.5"
         onClick={() => handleAction("deny")}
         disabled={loading !== null}
       >

@@ -10,7 +10,7 @@ interface LogoProps {
 }
 
 export function Logo({ variant = "full", theme = "light", className, href = "/" }: LogoProps) {
-  const src = theme === "dark" ? "/New_dark.png" : "/New_light.png";
+  const src = theme === "dark" ? "/New_dark_v2.png" : "/New_light.png";
 
   // Crop vertical whitespace by clipping the height, but allow full natural width
   const containerH = variant === "monogram" ? 40 : 96;

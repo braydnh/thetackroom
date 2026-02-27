@@ -60,12 +60,12 @@
   --olive: #2C3726;          /* primary dark olive — backgrounds, CTAs, badges */
   --olive-light: #3d4f32;    /* hover state */
   --olive-dark: #1e2619;     /* pressed / deep */
-  --cream: #F0EDE3;          /* off-white — page background, text on dark */
+  --cream: #F7F4F0;          /* off-white — page background, text on dark */
   --navy: #1a2340;           /* secondary — headings, nav text */
   --navy-light: #2a3558;     /* hover on navy elements */
 
   /* Shadcn tokens mapped to brand */
-  --background: #F0EDE3;          /* cream page background */
+  --background: #F7F4F0;          /* cream page background */
   --foreground: #1a2340;          /* navy text */
   --card: #ffffff;
   --card-foreground: #1a2340;

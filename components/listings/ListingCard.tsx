@@ -28,6 +28,7 @@ export interface ListingCardData {
   seller_username: string;
   seller_avatar?: string | null;
   seller_is_founding?: boolean;
+  seller_is_ambassador?: boolean;
   favourite_count?: number;
   is_featured?: boolean;
 }
@@ -183,6 +184,9 @@ export function ListingCard({
           <span className="text-xs text-muted-foreground truncate">{listing.seller_username}</span>
           {listing.seller_is_founding && (
             <span className="text-[9px] text-olive font-medium">★</span>
+          )}
+          {listing.seller_is_ambassador && (
+            <span className="text-[9px] font-medium text-navy">🎖</span>
           )}
         </div>
 

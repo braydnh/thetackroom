@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,26 +8,32 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Loader2, ExternalLink } from "lucide-react";
+import { Loader2, ExternalLink, Camera } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function SettingsPage() {
   const router = useRouter();
   const supabase = createClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [userId, setUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [gettingDashboard, setGettingDashboard] = useState(false);
 
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [location, setLocation] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/login"); return; }
+      setUserId(user.id);
       const { data } = await supabase
         .from("profiles")
         .select("username, display_name, bio, location, avatar_url, stripe_account_id, stripe_onboarding_complete")
@@ -38,13 +44,54 @@ export default function SettingsPage() {
       setDisplayName(data.display_name ?? "");
       setBio(data.bio ?? "");
       setLocation(data.location ?? "");
+      setAvatarUrl(data.avatar_url ?? null);
       setLoading(false);
     }
     load();
   }, [supabase, router]);
 
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    const ext = file.name.split(".").pop();
+    const path = `${userId}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(path, file, { upsert: true, contentType: file.type });
+
+    if (uploadError) {
+      toast.error("Failed to upload photo");
+      setUploadingAvatar(false);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ avatar_url: publicUrl })
+      .eq("id", userId);
+
+    if (updateError) {
+      toast.error("Failed to save photo");
+    } else {
+      setAvatarUrl(publicUrl);
+      toast.success("Profile photo updated");
+    }
+    setUploadingAvatar(false);
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
+    if (!userId) return;
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
@@ -53,7 +100,7 @@ export default function SettingsPage() {
         bio: bio.trim() || null,
         location: location.trim() || null,
       })
-      .eq("id", (await supabase.auth.getUser()).data.user!.id);
+      .eq("id", userId);
 
     if (error) {
       toast.error("Failed to save changes");
@@ -91,6 +138,54 @@ export default function SettingsPage() {
       >
         Settings
       </h1>
+
+      {/* Avatar */}
+      <div className="flex items-center gap-5 mb-6">
+        <div className="relative">
+          <div className="h-20 w-20 rounded-full bg-muted overflow-hidden flex-shrink-0">
+            {avatarUrl ? (
+              <Image src={avatarUrl} alt="Profile photo" width={80} height={80} className="h-full w-full object-cover" />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center bg-olive/20">
+                <span className="text-2xl font-bold text-olive">
+                  {(profile?.username ?? "?")[0].toUpperCase()}
+                </span>
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingAvatar}
+            className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-olive text-cream flex items-center justify-center hover:bg-olive-light transition-colors shadow-sm"
+          >
+            {uploadingAvatar ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Camera className="h-3.5 w-3.5" />
+            )}
+          </button>
+        </div>
+        <div>
+          <p className="text-sm font-medium text-navy">Profile photo</p>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingAvatar}
+            className="text-xs text-olive hover:underline mt-0.5"
+          >
+            {uploadingAvatar ? "Uploading…" : "Change photo"}
+          </button>
+          <p className="text-xs text-muted-foreground mt-0.5">JPG, PNG or WebP · Max 5MB</p>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={handleAvatarChange}
+        />
+      </div>
 
       {/* Profile settings */}
       <form onSubmit={handleSave} className="space-y-5">

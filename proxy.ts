@@ -12,7 +12,8 @@ export async function proxy(request: NextRequest) {
 
   // ── Maintenance mode ──────────────────────────────────────────────────────
   const maintenanceMode = process.env.MAINTENANCE_MODE === "1";
-  if (maintenanceMode && pathname !== "/maintenance") {
+  const MAINTENANCE_BYPASS_PATHS = ["/maintenance", "/auth/callback", "/callback", "/api/"];
+  if (maintenanceMode && !MAINTENANCE_BYPASS_PATHS.some((p) => pathname.startsWith(p))) {
     const bypassKey = process.env.MAINTENANCE_KEY;
 
     // Set bypass cookie when correct key is supplied as ?preview=KEY

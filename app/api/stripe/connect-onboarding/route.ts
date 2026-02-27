@@ -29,9 +29,10 @@ export async function POST() {
 
     if (!profile) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
 
-    // If already fully onboarded, return early
-    if (profile.stripe_onboarding_complete) {
-      return NextResponse.json({ already_complete: true });
+    // If already fully onboarded, generate a login link to the Express dashboard
+    if (profile.stripe_onboarding_complete && profile.stripe_account_id) {
+      const loginLink = await stripe.accounts.createLoginLink(profile.stripe_account_id);
+      return NextResponse.json({ url: loginLink.url });
     }
 
     let accountId = profile.stripe_account_id;

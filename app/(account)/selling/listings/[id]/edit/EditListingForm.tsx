@@ -338,7 +338,7 @@ export default function EditListingForm({ listing }: { listing: ExistingListing 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="brand">Brand <span className="text-muted-foreground font-normal">(optional)</span></Label>
-            <Input id="brand" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="e.g. Bates, Pikeur" />
+            <Input id="brand" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="e.g. Bates, Ariat" />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="size">Size <span className="text-muted-foreground font-normal">(optional)</span></Label>
@@ -350,15 +350,15 @@ export default function EditListingForm({ listing }: { listing: ExistingListing 
 
         {/* Shipping */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
               <Label className="text-base font-semibold text-navy">Shipping</Label>
               <p className="text-xs text-muted-foreground">Buyer covers shipping costs</p>
             </div>
             <button
               type="button"
               onClick={() => setAllowsShipping(!allowsShipping)}
-              className={`relative h-6 w-11 rounded-full transition-colors ${allowsShipping ? "bg-olive" : "bg-muted"}`}
+              className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${allowsShipping ? "bg-olive" : "bg-muted"}`}
             >
               <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${allowsShipping ? "translate-x-5" : "translate-x-0.5"}`} />
             </button>
@@ -395,15 +395,15 @@ export default function EditListingForm({ listing }: { listing: ExistingListing 
         </div>
 
         {/* Local pickup */}
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
             <Label className="text-base font-semibold text-navy">Local Pickup</Label>
             <p className="text-xs text-muted-foreground">Payment still processed through the platform</p>
           </div>
           <button
             type="button"
             onClick={() => setAllowsPickup(!allowsPickup)}
-            className={`relative h-6 w-11 rounded-full transition-colors ${allowsPickup ? "bg-olive" : "bg-muted"}`}
+            className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${allowsPickup ? "bg-olive" : "bg-muted"}`}
           >
             <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${allowsPickup ? "translate-x-5" : "translate-x-0.5"}`} />
           </button>
