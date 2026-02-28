@@ -28,7 +28,7 @@ const faqs = [
     items: [
       { q: "How do I reset my password?", a: "Click 'Forgot password?' on the login page. We'll send a reset link to your email address." },
       { q: "Can I change my username?", a: "Yes — go to Settings and update your display name. Note: your username (used in your profile URL) cannot currently be changed after signup." },
-      { q: "How do I delete my account?", a: "Email us at thetackroom.au@gmail.com with your request. We'll process it within 5 business days." },
+      { q: "How do I delete my account?", a: "Email us at contact@tackroomshop.com.au with your request. We'll process it within 5 business days." },
     ],
   },
   {

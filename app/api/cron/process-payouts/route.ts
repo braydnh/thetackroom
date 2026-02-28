@@ -19,7 +19,13 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/resend";
-import { payoutReleasedSellerEmail, leaveReviewBuyerEmail } from "@/lib/emails";
+import {
+  payoutReleasedSellerEmail,
+  leaveReviewBuyerEmail,
+  trackingDeadlineExpiredSellerEmail,
+  trackingDeadlineExpiredBuyerEmail,
+  payoutFailedSellerEmail,
+} from "@/lib/emails";
 import { formatAUD } from "@/lib/utils/currency";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01-28.clover" });
@@ -170,6 +176,26 @@ export async function GET(req: Request) {
     } catch (err: any) {
       console.error(`Payout failed for order ${order.id}:`, err.message);
       results.push({ order_id: order.id, status: "error", detail: err.message });
+
+      // Notify seller their payout failed
+      try {
+        const listingTitle = (order as any).listings?.title ?? "your item";
+        const [{ data: sellerProfile }, sellerAuth] = await Promise.all([
+          admin.from("profiles").select("display_name, username").eq("id", order.seller_id).single(),
+          admin.auth.admin.getUserById(order.seller_id),
+        ]);
+        const sellerEmail = (sellerAuth as any).data?.user?.email;
+        const sellerName = sellerProfile?.display_name ?? sellerProfile?.username ?? "there";
+        if (sellerEmail) {
+          await sendEmail({
+            to: sellerEmail,
+            subject: `Action needed: your payout could not be processed — ${listingTitle}`,
+            html: payoutFailedSellerEmail({ sellerName, listingTitle, orderId: order.id }),
+          });
+        }
+      } catch {
+        // best-effort
+      }
     }
   }
 
@@ -177,7 +203,7 @@ export async function GET(req: Request) {
   const trackingDeadline = new Date().toISOString();
   const { data: overdueOrders } = await admin
     .from("orders")
-    .select("id, buyer_id, listing_id")
+    .select("id, seller_id, buyer_id, listing_id, listings(title)")
     .eq("status", "awaiting_shipment")
     .eq("pickup_method", "shipping")
     .lt("tracking_deadline", trackingDeadline)
@@ -185,15 +211,64 @@ export async function GET(req: Request) {
 
   for (const order of (overdueOrders ?? [])) {
     try {
-      // Move to a state that signals buyer can request refund
-      // We'll use "disputed" with a seller_notes flag for now
       await admin.from("orders").update({
         status: "disputed",
         seller_notes: "tracking_deadline_exceeded",
       }).eq("id", order.id);
 
-      // Restore listing to active
       await admin.from("listings").update({ status: "active" }).eq("id", order.listing_id);
+
+      // Notify both parties
+      try {
+        const listingTitle = (order as any).listings?.title ?? "the item";
+        const [
+          sellerAuth, buyerAuth,
+          { data: sellerProfile }, { data: buyerProfile },
+        ] = await Promise.all([
+          admin.auth.admin.getUserById((order as any).seller_id),
+          admin.auth.admin.getUserById((order as any).buyer_id),
+          admin.from("profiles").select("display_name, username").eq("id", (order as any).seller_id).single(),
+          admin.from("profiles").select("display_name, username").eq("id", (order as any).buyer_id).single(),
+        ]);
+        const sellerEmail = (sellerAuth as any).data?.user?.email;
+        const buyerEmail  = (buyerAuth as any).data?.user?.email;
+        const sellerName  = sellerProfile?.display_name ?? sellerProfile?.username ?? "there";
+        const buyerName   = buyerProfile?.display_name  ?? buyerProfile?.username  ?? "there";
+
+        if (sellerEmail) {
+          await sendEmail({
+            to: sellerEmail,
+            subject: `Shipping deadline missed — ${listingTitle}`,
+            html: trackingDeadlineExpiredSellerEmail({ sellerName, listingTitle, orderId: order.id }),
+          });
+        }
+        if (buyerEmail) {
+          await sendEmail({
+            to: buyerEmail,
+            subject: `Shipping deadline missed — ${listingTitle}`,
+            html: trackingDeadlineExpiredBuyerEmail({ buyerName, listingTitle, orderId: order.id }),
+          });
+        }
+
+        await Promise.all([
+          admin.from("notifications").insert({
+            user_id: (order as any).seller_id,
+            type: "tracking_deadline_expired",
+            title: "Shipping deadline missed",
+            body: `You missed the shipping deadline for "${listingTitle}". The buyer has been offered a refund.`,
+            link: `/selling/orders/${order.id}`,
+          }),
+          admin.from("notifications").insert({
+            user_id: (order as any).buyer_id,
+            type: "tracking_deadline_expired",
+            title: "Seller missed shipping deadline",
+            body: `The seller missed the shipping deadline for "${listingTitle}". You are eligible for a full refund.`,
+            link: `/orders/${order.id}`,
+          }),
+        ]);
+      } catch (notifyErr) {
+        console.error(`Deadline notifications failed for order ${order.id}:`, notifyErr);
+      }
 
       results.push({ order_id: order.id, status: "ok", detail: "tracking_deadline_expired" });
     } catch (err: any) {

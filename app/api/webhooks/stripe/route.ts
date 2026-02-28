@@ -11,7 +11,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/resend";
-import { newOrderEmail, orderConfirmedBuyerEmail } from "@/lib/emails";
+import { newOrderEmail, orderConfirmedBuyerEmail, stripeOnboardingCompleteEmail, boostPurchasedEmail } from "@/lib/emails";
 import { formatAUD } from "@/lib/utils/currency";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01-28.clover" });
@@ -37,10 +37,34 @@ export async function POST(req: Request) {
   if (event.type === "account.updated") {
     const account = event.data.object as Stripe.Account;
     if (account.charges_enabled) {
+      // Check current state so we only email on the first transition
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("id, stripe_onboarding_complete, display_name, username")
+        .eq("stripe_account_id", account.id)
+        .single();
+
       await supabase
         .from("profiles")
         .update({ stripe_onboarding_complete: true, role: "seller" })
         .eq("stripe_account_id", account.id);
+
+      if (existingProfile && !existingProfile.stripe_onboarding_complete) {
+        try {
+          const sellerAuth = await supabase.auth.admin.getUserById((existingProfile as any).id);
+          const sellerEmail = (sellerAuth as any).data?.user?.email;
+          const sellerName = (existingProfile as any).display_name ?? (existingProfile as any).username ?? "there";
+          if (sellerEmail) {
+            await sendEmail({
+              to: sellerEmail,
+              subject: "You're ready to start selling on The Tack Room!",
+              html: stripeOnboardingCompleteEmail(sellerName),
+            });
+          }
+        } catch (err) {
+          console.error("Onboarding email failed:", err);
+        }
+      }
     }
   }
 
@@ -67,6 +91,32 @@ export async function POST(req: Request) {
             amount_paid: pi.amount_received,
             ends_at,
           });
+
+          // Send boost confirmation email
+          try {
+            const [{ data: sellerProfile }, sellerAuth, { data: listing }] = await Promise.all([
+              supabase.from("profiles").select("display_name, username").eq("id", seller_id).single(),
+              supabase.auth.admin.getUserById(seller_id),
+              supabase.from("listings").select("title").eq("id", listing_id).single(),
+            ]);
+            const sellerEmail = (sellerAuth as any).data?.user?.email;
+            const sellerName = sellerProfile?.display_name ?? sellerProfile?.username ?? "there";
+            const listingTitle = (listing as any)?.title ?? "your listing";
+            const formattedEndsAt = new Date(ends_at).toLocaleString("en-AU", {
+              timeZone: "Australia/Sydney",
+              dateStyle: "medium",
+              timeStyle: "short",
+            });
+            if (sellerEmail) {
+              await sendEmail({
+                to: sellerEmail,
+                subject: `Your listing boost is live — ${listingTitle}`,
+                html: boostPurchasedEmail({ sellerName, listingTitle, slot, endsAt: formattedEndsAt, listingId: listing_id }),
+              });
+            }
+          } catch (err) {
+            console.error("Boost email failed:", err);
+          }
         }
       }
     }

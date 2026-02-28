@@ -98,7 +98,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold text-navy mb-2">12. Contact</h2>
           <p className="text-muted-foreground leading-relaxed">
-            Questions? Email <a href="mailto:thetackroom.au@gmail.com" className="text-olive hover:underline">thetackroom.au@gmail.com</a>.
+            Questions? Email <a href="mailto:contact@tackroomshop.com.au" className="text-olive hover:underline">contact@tackroomshop.com.au</a>.
           </p>
         </section>
       </div>

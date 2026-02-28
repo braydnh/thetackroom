@@ -407,6 +407,62 @@ export function newReviewEmail({
   `);
 }
 
+export function trackingReminderEmail({
+  sellerName,
+  listingTitle,
+  orderId,
+  hoursLeft,
+  deadline,
+}: {
+  sellerName: string;
+  listingTitle: string;
+  orderId: string;
+  hoursLeft: 6 | 2;
+  deadline: string;
+}) {
+  const isFinal = hoursLeft === 2;
+  const bannerBg = isFinal ? "#7f1d1d" : "#1a2744";
+  const bannerText = isFinal
+    ? `⚠️ Final reminder — tracking due in ~2 hours`
+    : `Reminder — tracking due in ~6 hours`;
+  const urgencyNote = isFinal
+    ? `<p style="margin:16px 0 0;font-size:14px;color:#b91c1c;font-weight:600;line-height:1.6">
+        If tracking is not submitted before the deadline, the buyer will be offered a full refund and your listing will be reopened.
+       </p>`
+    : `<p style="margin:16px 0 0;font-size:14px;color:#666;line-height:1.6">
+        If tracking is not submitted in time, the buyer will be offered a full refund.
+       </p>`;
+
+  return wrapper(`
+    <div style="background:${bannerBg};border-radius:6px;padding:14px 20px;margin-bottom:24px">
+      <p style="margin:0;font-size:14px;font-weight:700;color:#ffffff">${bannerText}</p>
+    </div>
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      Don't forget to add your tracking number
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${sellerName}, you still need to submit a tracking number for your recent sale.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;border:1px solid #eee;border-radius:6px;overflow:hidden">
+      <tr style="background:#f9f6f0">
+        <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666;width:40%">Item</td>
+        <td style="padding:12px 16px;font-size:14px;color:#1a2744;font-weight:600">${listingTitle}</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666">Deadline</td>
+        <td style="padding:12px 16px;font-size:14px;color:#1a2744;font-weight:600">${deadline} AEDT</td>
+      </tr>
+    </table>
+    ${urgencyNote}
+    <p style="margin:16px 0 0;font-size:14px;color:#666;line-height:1.6">
+      Open your order in the seller dashboard, enter your tracking number and carrier, then click Save.
+    </p>
+    <div style="text-align:center">
+      ${btn("Add tracking number", `https://tackroomshop.com.au/selling/orders/${orderId}`)}
+    </div>
+  `);
+}
+
 export function leaveReviewBuyerEmail({
   buyerName,
   listingTitle,
@@ -430,6 +486,283 @@ export function leaveReviewBuyerEmail({
     </p>
     <div style="text-align:center">
       ${btn("Leave a review", `https://tackroomshop.com.au/orders/${orderId}`)}
+    </div>
+  `);
+}
+
+export function trackingDeadlineExpiredSellerEmail({
+  sellerName,
+  listingTitle,
+  orderId,
+}: {
+  sellerName: string;
+  listingTitle: string;
+  orderId: string;
+}) {
+  return wrapper(`
+    <div style="background:#7f1d1d;border-radius:6px;padding:14px 20px;margin-bottom:24px">
+      <p style="margin:0;font-size:14px;font-weight:700;color:#ffffff">Shipping deadline missed</p>
+    </div>
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      Your shipping deadline has passed
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${sellerName}, the 3-day shipping deadline for <strong>${listingTitle}</strong> has passed without a tracking number being submitted.
+    </p>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      The order has been flagged and the buyer has been notified that they are eligible for a full refund.
+    </p>
+    <p style="margin:16px 0 0;font-size:14px;color:#666;line-height:1.6">
+      If you have already shipped the item, contact us at <a href="mailto:contact@tackroomshop.com.au" style="color:#4a5e35">contact@tackroomshop.com.au</a> as soon as possible with your tracking details.
+    </p>
+    <div style="text-align:center">
+      ${btn("View order", `https://tackroomshop.com.au/selling/orders/${orderId}`)}
+    </div>
+  `);
+}
+
+export function trackingDeadlineExpiredBuyerEmail({
+  buyerName,
+  listingTitle,
+  orderId,
+}: {
+  buyerName: string;
+  listingTitle: string;
+  orderId: string;
+}) {
+  return wrapper(`
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      Your seller missed the shipping deadline
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${buyerName}, the seller did not submit a tracking number for <strong>${listingTitle}</strong> within the 3-day shipping window.
+    </p>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Your order has been flagged and you are eligible for a full refund. Our team will review the case and process it shortly — you do not need to take any action.
+    </p>
+    <p style="margin:16px 0 0;font-size:14px;color:#666;line-height:1.6">
+      If you have any questions, contact us at <a href="mailto:contact@tackroomshop.com.au" style="color:#4a5e35">contact@tackroomshop.com.au</a>.
+    </p>
+    <div style="text-align:center">
+      ${btn("View order", `https://tackroomshop.com.au/orders/${orderId}`)}
+    </div>
+  `);
+}
+
+export function disputeRefundBuyerEmail({
+  buyerName,
+  listingTitle,
+  amount,
+  orderId,
+}: {
+  buyerName: string;
+  listingTitle: string;
+  amount: string;
+  orderId: string;
+}) {
+  return wrapper(`
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      Your refund has been approved
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${buyerName}, your dispute for <strong>${listingTitle}</strong> has been reviewed and a refund has been issued.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;border:1px solid #eee;border-radius:6px;overflow:hidden">
+      <tr style="background:#f9f6f0">
+        <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666;width:40%">Item</td>
+        <td style="padding:12px 16px;font-size:14px;color:#1a2744;font-weight:600">${listingTitle}</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666">Refund amount</td>
+        <td style="padding:12px 16px;font-size:14px;color:#1a2744;font-weight:600">${amount}</td>
+      </tr>
+    </table>
+    <p style="margin:0;font-size:14px;color:#666;line-height:1.6">
+      The refund will appear on your original payment method within 5–10 business days depending on your bank.
+    </p>
+    <div style="text-align:center">
+      ${btn("View order", `https://tackroomshop.com.au/orders/${orderId}`)}
+    </div>
+  `);
+}
+
+export function disputeRefundSellerEmail({
+  sellerName,
+  listingTitle,
+  orderId,
+}: {
+  sellerName: string;
+  listingTitle: string;
+  orderId: string;
+}) {
+  return wrapper(`
+    <div style="background:#7f1d1d;border-radius:6px;padding:14px 20px;margin-bottom:24px">
+      <p style="margin:0;font-size:14px;font-weight:700;color:#ffffff">Dispute outcome: refund issued to buyer</p>
+    </div>
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      Dispute resolved — refund issued
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${sellerName}, after reviewing the dispute for <strong>${listingTitle}</strong>, we have issued a full refund to the buyer. No payout will be released for this order.
+    </p>
+    <p style="margin:16px 0 0;font-size:14px;color:#666;line-height:1.6">
+      If you believe this decision was made in error, contact us at <a href="mailto:contact@tackroomshop.com.au" style="color:#4a5e35">contact@tackroomshop.com.au</a>.
+    </p>
+    <div style="text-align:center">
+      ${btn("View order", `https://tackroomshop.com.au/selling/orders/${orderId}`)}
+    </div>
+  `);
+}
+
+export function disputeReleasedSellerEmail({
+  sellerName,
+  listingTitle,
+  amount,
+  orderId,
+}: {
+  sellerName: string;
+  listingTitle: string;
+  amount: string;
+  orderId: string;
+}) {
+  return wrapper(`
+    <div style="background:#14532d;border-radius:6px;padding:14px 20px;margin-bottom:24px">
+      <p style="margin:0;font-size:14px;font-weight:700;color:#ffffff">Dispute outcome: resolved in your favour</p>
+    </div>
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      Dispute resolved — payout released
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${sellerName}, after reviewing the dispute for <strong>${listingTitle}</strong>, we have resolved it in your favour and your payout has been released.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;border:1px solid #eee;border-radius:6px;overflow:hidden">
+      <tr style="background:#f9f6f0">
+        <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666;width:40%">Item</td>
+        <td style="padding:12px 16px;font-size:14px;color:#1a2744;font-weight:600">${listingTitle}</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666">Payout amount</td>
+        <td style="padding:12px 16px;font-size:14px;color:#1a2744;font-weight:600">${amount}</td>
+      </tr>
+    </table>
+    <p style="margin:0;font-size:14px;color:#666;line-height:1.6">
+      Funds will arrive in your connected Stripe account within 1–2 business days.
+    </p>
+    <div style="text-align:center">
+      ${btn("View order", `https://tackroomshop.com.au/selling/orders/${orderId}`)}
+    </div>
+  `);
+}
+
+export function stripeOnboardingCompleteEmail(sellerName: string) {
+  return wrapper(`
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      You're ready to start selling! 🎉
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${sellerName}, your Stripe account has been verified and you can now publish listings and receive payouts on The Tack Room.
+    </p>
+    <ul style="margin:16px 0 0;padding-left:20px;font-size:15px;color:#444;line-height:1.8">
+      <li>Create your first listing from your seller dashboard</li>
+      <li>Payouts are processed automatically 48 hours after delivery</li>
+      <li>A 5% platform fee is deducted at the time of each sale</li>
+    </ul>
+    <div style="text-align:center">
+      ${btn("Go to your dashboard", "https://tackroomshop.com.au/selling")}
+    </div>
+  `);
+}
+
+export function accountSuspendedEmail(name: string) {
+  return wrapper(`
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      Your account has been suspended
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${name}, your Tack Room account has been suspended following a review of activity that violated our Terms of Service.
+    </p>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      While suspended, you will not be able to log in, list items, or make purchases on the platform.
+    </p>
+    <p style="margin:16px 0 0;font-size:14px;color:#666;line-height:1.6">
+      If you believe this is a mistake, please contact us at <a href="mailto:contact@tackroomshop.com.au" style="color:#4a5e35">contact@tackroomshop.com.au</a> to appeal.
+    </p>
+  `);
+}
+
+export function boostPurchasedEmail({
+  sellerName,
+  listingTitle,
+  slot,
+  endsAt,
+  listingId,
+}: {
+  sellerName: string;
+  listingTitle: string;
+  slot: string;
+  endsAt: string;
+  listingId: string;
+}) {
+  const slotLabels: Record<string, string> = {
+    homepage: "Homepage — Featured section",
+    search_top: "Browse listings — Top of results",
+  };
+  const slotLabel = slotLabels[slot] ?? slot;
+
+  return wrapper(`
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      Your listing boost is live! ⚡
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${sellerName}, your listing is now featured on The Tack Room.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;border:1px solid #eee;border-radius:6px;overflow:hidden">
+      <tr style="background:#f9f6f0">
+        <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666;width:40%">Listing</td>
+        <td style="padding:12px 16px;font-size:14px;color:#1a2744;font-weight:600">${listingTitle}</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666">Placement</td>
+        <td style="padding:12px 16px;font-size:14px;color:#1a2744">${slotLabel}</td>
+      </tr>
+      <tr style="background:#f9f6f0">
+        <td style="padding:12px 16px;font-size:13px;font-weight:600;color:#666">Boost expires</td>
+        <td style="padding:12px 16px;font-size:14px;color:#1a2744;font-weight:600">${endsAt} AEDT</td>
+      </tr>
+    </table>
+    <div style="text-align:center">
+      ${btn("View your listing", `https://tackroomshop.com.au/listings/${listingId}`)}
+    </div>
+  `);
+}
+
+export function payoutFailedSellerEmail({
+  sellerName,
+  listingTitle,
+  orderId,
+}: {
+  sellerName: string;
+  listingTitle: string;
+  orderId: string;
+}) {
+  return wrapper(`
+    <div style="background:#7f1d1d;border-radius:6px;padding:14px 20px;margin-bottom:24px">
+      <p style="margin:0;font-size:14px;font-weight:700;color:#ffffff">Payout failed</p>
+    </div>
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      We couldn't process your payout
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${sellerName}, we were unable to transfer your payout for <strong>${listingTitle}</strong> to your Stripe account.
+    </p>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      This is usually caused by an issue with your connected bank account or Stripe settings. Please check your Stripe dashboard and ensure your details are up to date.
+    </p>
+    <p style="margin:16px 0 0;font-size:14px;color:#666;line-height:1.6">
+      If you need help, contact us at <a href="mailto:contact@tackroomshop.com.au" style="color:#4a5e35">contact@tackroomshop.com.au</a> quoting order ID: <code style="background:#f3f4f6;padding:2px 6px;border-radius:3px">${orderId}</code>.
+    </p>
+    <div style="text-align:center">
+      ${btn("Check Stripe dashboard", "https://dashboard.stripe.com")}
     </div>
   `);
 }

@@ -34,6 +34,7 @@ export default async function SellerDashboardPage() {
       .from("listings")
       .select("id, title, price, status, view_count, favourite_count, created_at, listing_images(display_url, is_primary, sort_order)")
       .eq("seller_id", user.id)
+      .neq("status", "deleted")
       .order("created_at", { ascending: false })
       .limit(50),
   ]);

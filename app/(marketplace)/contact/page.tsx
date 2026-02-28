@@ -22,7 +22,7 @@ export default function ContactPage() {
     setLoading(true);
     // Mailto fallback — replace with Resend API call when ready
     const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`);
-    window.location.href = `mailto:thetackroom.au@gmail.com?subject=${encodeURIComponent(subject || "Enquiry from website")}&body=${body}`;
+    window.location.href = `mailto:contact@tackroomshop.com.au?subject=${encodeURIComponent(subject || "Enquiry from website")}&body=${body}`;
     setSent(true);
     setLoading(false);
   }
@@ -45,8 +45,8 @@ export default function ContactPage() {
               <h2 className="font-semibold text-navy mb-1">Opening your email app</h2>
               <p className="text-sm text-muted-foreground">
                 If it didn&apos;t open, email us directly at{" "}
-                <a href="mailto:thetackroom.au@gmail.com" className="text-olive hover:underline">
-                  thetackroom.au@gmail.com
+                <a href="mailto:contact@tackroomshop.com.au" className="text-olive hover:underline">
+                  contact@tackroomshop.com.au
                 </a>
               </p>
             </div>
@@ -89,8 +89,8 @@ export default function ContactPage() {
         <div className="space-y-5">
           <div>
             <h3 className="text-sm font-semibold text-navy mb-2">Email</h3>
-            <a href="mailto:thetackroom.au@gmail.com" className="flex items-center gap-2 text-sm text-olive hover:underline">
-              <Mail className="h-4 w-4" /> thetackroom.au@gmail.com
+            <a href="mailto:contact@tackroomshop.com.au" className="flex items-center gap-2 text-sm text-olive hover:underline">
+              <Mail className="h-4 w-4" /> contact@tackroomshop.com.au
             </a>
           </div>
           <div>

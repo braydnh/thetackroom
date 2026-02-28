@@ -63,7 +63,7 @@ export default function FoundingSellersPage() {
           To request inclusion, reach out to us on Instagram{" "}
           <a href="https://www.instagram.com/thetackroom.au" className="text-olive hover:underline" target="_blank" rel="noopener noreferrer">@thetackroom.au</a>{" "}
           or email{" "}
-          <a href="mailto:thetackroom.au@gmail.com" className="text-olive hover:underline">thetackroom.au@gmail.com</a>.
+          <a href="mailto:contact@tackroomshop.com.au" className="text-olive hover:underline">contact@tackroomshop.com.au</a>.
         </p>
       </div>
 

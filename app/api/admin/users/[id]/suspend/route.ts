@@ -7,6 +7,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendEmail } from "@/lib/resend";
+import { accountSuspendedEmail } from "@/lib/emails";
 
 export async function PATCH(
   req: Request,
@@ -27,5 +29,26 @@ export async function PATCH(
   const admin = createAdminClient();
   const { error } = await admin.from("profiles").update({ is_suspended }).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  if (is_suspended) {
+    try {
+      const [userAuth, { data: profile }] = await Promise.all([
+        admin.auth.admin.getUserById(id),
+        admin.from("profiles").select("display_name, username").eq("id", id).single(),
+      ]);
+      const userEmail = (userAuth as any).data?.user?.email;
+      const name = profile?.display_name ?? profile?.username ?? "there";
+      if (userEmail) {
+        await sendEmail({
+          to: userEmail,
+          subject: "Your Tack Room account has been suspended",
+          html: accountSuspendedEmail(name),
+        });
+      }
+    } catch (err) {
+      console.error("Suspension email failed:", err);
+    }
+  }
+
   return NextResponse.json({ success: true });
 }

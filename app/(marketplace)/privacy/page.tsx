@@ -71,7 +71,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-semibold text-navy mb-2">7. Your Rights</h2>
           <p className="text-muted-foreground leading-relaxed">
-            Under the Australian Privacy Act 1988 (Cth), you have the right to access, correct, or request deletion of your personal information. Contact us at <a href="mailto:thetackroom.au@gmail.com" className="text-olive hover:underline">thetackroom.au@gmail.com</a>.
+            Under the Australian Privacy Act 1988 (Cth), you have the right to access, correct, or request deletion of your personal information. Contact us at <a href="mailto:contact@tackroomshop.com.au" className="text-olive hover:underline">contact@tackroomshop.com.au</a>.
           </p>
         </section>
 
@@ -85,7 +85,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-semibold text-navy mb-2">9. Contact</h2>
           <p className="text-muted-foreground leading-relaxed">
-            Questions about this policy? Email <a href="mailto:thetackroom.au@gmail.com" className="text-olive hover:underline">thetackroom.au@gmail.com</a>.
+            Questions about this policy? Email <a href="mailto:contact@tackroomshop.com.au" className="text-olive hover:underline">contact@tackroomshop.com.au</a>.
           </p>
         </section>
       </div>
