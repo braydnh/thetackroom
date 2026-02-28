@@ -28,14 +28,6 @@ export const metadata: Metadata = {
     locale: "en_AU",
     type: "website",
   },
-  icons: {
-    icon: [
-      { url: "/favicon.ico", type: "image/x-icon" },
-      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-    ],
-    shortcut: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
-  },
   manifest: "/manifest.json",
 };
 
