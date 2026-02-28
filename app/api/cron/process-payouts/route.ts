@@ -1,16 +1,18 @@
 /**
  * GET /api/cron/process-payouts
  *
- * Vercel Cron job — runs every 15 minutes.
- * Finds all orders where:
- *   - status = "delivered" AND dispute_window_ends_at <= NOW()
- *   - OR status = "payment_captured" AND pickup_method = "local_pickup" AND buyer_confirmed_at IS NOT NULL
+ * Vercel Cron job — runs daily at midnight (0 0 * * *).
+ * Handles three things in one pass:
  *
- * For each: creates a Stripe Transfer to the seller's connected account,
- * then marks the order as "completed".
+ * 1. PAYOUTS: orders with status "delivered" or "dispute_window" where dispute_window_ends_at <= NOW()
+ *    → creates Stripe Transfer to seller, marks order "completed"
  *
- * Configure in vercel.json:
- *   { "crons": [{ "path": "/api/cron/process-payouts", "schedule": "every 15 minutes" }] }
+ * 2. TRACKING REMINDERS: awaiting_shipment shipping orders where tracking_deadline is approaching
+ *    → 6h reminder: deadline within next 24h, reminder_6h_sent = false
+ *    → 2h reminder: deadline within next 6h, reminder_2h_sent = false
+ *
+ * 3. OVERDUE TRACKING: awaiting_shipment shipping orders where tracking_deadline has passed
+ *    → marks order "disputed", restores listing to "active", notifies both parties
  *
  * Secured with CRON_SECRET — Vercel passes it as Authorization: Bearer <secret>
  */
@@ -25,6 +27,7 @@ import {
   trackingDeadlineExpiredSellerEmail,
   trackingDeadlineExpiredBuyerEmail,
   payoutFailedSellerEmail,
+  trackingReminderEmail,
 } from "@/lib/emails";
 import { formatAUD } from "@/lib/utils/currency";
 
@@ -198,6 +201,72 @@ export async function GET(req: Request) {
       }
     }
   }
+
+  // ── Tracking reminders (folded in here since Hobby plan only allows daily crons) ──
+  // 6h reminder: deadline within next 24h (catches everything due today from midnight run)
+  // 2h reminder: deadline within next 6h (more urgent, red banner)
+  const H = 60 * 60 * 1000;
+  const nowMs = Date.now();
+  const in24h = new Date(nowMs + 24 * H).toISOString();
+  const in6h  = new Date(nowMs +  6 * H).toISOString();
+
+  const [{ data: reminder6hOrders }, { data: reminder2hOrders }] = await Promise.all([
+    admin
+      .from("orders")
+      .select("id, seller_id, tracking_deadline, listings(title)")
+      .eq("status", "awaiting_shipment")
+      .eq("pickup_method", "shipping")
+      .eq("reminder_6h_sent", false)
+      .gt("tracking_deadline", now)
+      .lte("tracking_deadline", in24h)
+      .limit(50),
+    admin
+      .from("orders")
+      .select("id, seller_id, tracking_deadline, listings(title)")
+      .eq("status", "awaiting_shipment")
+      .eq("pickup_method", "shipping")
+      .eq("reminder_2h_sent", false)
+      .gt("tracking_deadline", now)
+      .lte("tracking_deadline", in6h)
+      .limit(50),
+  ]);
+
+  async function sendTrackingReminder(order: any, type: "6h" | "2h") {
+    const flagField = type === "6h" ? "reminder_6h_sent" : "reminder_2h_sent";
+    const hoursLeft = type === "6h" ? 6 : 2 as 6 | 2;
+    try {
+      const [{ data: profile }, authResult] = await Promise.all([
+        admin.from("profiles").select("display_name, username").eq("id", order.seller_id).single(),
+        admin.auth.admin.getUserById(order.seller_id),
+      ]);
+      const sellerEmail = (authResult as any).data?.user?.email;
+      if (!sellerEmail) throw new Error("No seller email");
+      const sellerName = profile?.display_name ?? profile?.username ?? "there";
+      const listingTitle = (order as any).listings?.title ?? "your item";
+      const deadline = new Date(order.tracking_deadline).toLocaleString("en-AU", {
+        timeZone: "Australia/Sydney",
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
+      await sendEmail({
+        to: sellerEmail,
+        subject: type === "6h"
+          ? `Reminder: add tracking for "${listingTitle}" — deadline today`
+          : `Final reminder: tracking deadline approaching — "${listingTitle}"`,
+        html: trackingReminderEmail({ sellerName, listingTitle, orderId: order.id, hoursLeft, deadline }),
+      });
+      await admin.from("orders").update({ [flagField]: true }).eq("id", order.id);
+      results.push({ order_id: order.id, status: "ok", detail: `tracking_reminder_${type}` });
+    } catch (err: any) {
+      console.error(`Tracking reminder ${type} failed for order ${order.id}:`, err.message);
+      results.push({ order_id: order.id, status: "error", detail: `tracking_reminder_${type}: ${err.message}` });
+    }
+  }
+
+  await Promise.all([
+    ...(reminder6hOrders ?? []).map((o: any) => sendTrackingReminder(o, "6h")),
+    ...(reminder2hOrders ?? []).map((o: any) => sendTrackingReminder(o, "2h")),
+  ]);
 
   // Also handle: tracking deadline expired without tracking submission → offer refund
   const trackingDeadline = new Date().toISOString();
