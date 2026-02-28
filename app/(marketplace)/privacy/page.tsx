@@ -14,7 +14,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-semibold text-navy mb-2">1. Who We Are</h2>
           <p className="text-muted-foreground leading-relaxed">
-            The Tack Room AU (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) operates an online marketplace for second-hand equestrian equipment in Australia. Our platform is available at thetackroom.com.au.
+            The Tack Room AU (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) operates an online marketplace for second-hand equestrian equipment in Australia. Our platform is available at tackroomshop.com.au.
           </p>
         </section>
 

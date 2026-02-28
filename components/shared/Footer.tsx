@@ -5,9 +5,9 @@ import { Instagram, Facebook } from "lucide-react";
 const footerLinks = {
   "Marketplace": [
     { label: "Shop All", href: "/listings" },
-    { label: "For the Horse", href: "/listings?category=horse" },
-    { label: "For the Rider", href: "/listings?category=rider" },
-    { label: "Sale & Deals", href: "/listings?category=sale" },
+    { label: "Horse", href: "/listings?category=horse" },
+    { label: "Rider", href: "/listings?category=rider" },
+    { label: "Stable & Agistment", href: "/listings?category=stable" },
   ],
   "Sell": [
     { label: "List an Item", href: "/selling/listings/new" },
