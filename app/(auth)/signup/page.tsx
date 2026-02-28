@@ -118,6 +118,24 @@ function SignupForm() {
     setLoading(true);
     const supabase = createClient();
 
+    // Normalize mobile to digits only for consistent storage + uniqueness checks
+    const normalizedMobile = mobile ? mobile.replace(/\D/g, "") || null : null;
+
+    // Check mobile uniqueness before creating the auth user
+    if (normalizedMobile) {
+      const res = await fetch("/api/auth/check-mobile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobile: normalizedMobile }),
+      });
+      const { taken } = await res.json();
+      if (taken) {
+        toast.error("This mobile number is already registered to an account.");
+        setLoading(false);
+        return;
+      }
+    }
+
     const address = [street, suburb, state, postcode].filter(Boolean).join(", ");
 
     const { error } = await supabase.auth.signUp({
@@ -128,7 +146,7 @@ function SignupForm() {
           username,
           full_name: `${firstName.trim()} ${lastName.trim()}`,
           dob,
-          mobile: mobile.trim() || null,
+          mobile: normalizedMobile,
           location: [suburb, state].filter(Boolean).join(", ") || null,
           address: address || null,
           is_founding_applicant: isFoundingSeller,
