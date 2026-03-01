@@ -32,13 +32,20 @@ export default async function SellerProfilePage({ params }: { params: Promise<{ 
   const { data: { user: currentUser } } = await supabase.auth.getUser();
   const isOwnProfile = currentUser?.id === (profile as any).id;
 
-  // Load active listings and recent reviews in parallel
-  const [{ data: listings }, { data: reviews }] = await Promise.all([
+  // Load active listings, sold listings, and recent reviews in parallel
+  const [{ data: listings }, { data: soldListings }, { data: reviews }] = await Promise.all([
     admin
       .from("listings")
       .select("id, title, price, condition, brand, listing_images(display_url, is_primary, sort_order)")
       .eq("seller_id", profile.id)
       .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(12),
+    admin
+      .from("listings")
+      .select("id, title, price, condition, brand, listing_images(display_url, is_primary, sort_order)")
+      .eq("seller_id", profile.id)
+      .eq("status", "sold")
       .order("created_at", { ascending: false })
       .limit(12),
     admin
@@ -157,6 +164,50 @@ export default async function SellerProfilePage({ params }: { params: Promise<{ 
                     allows_pickup: false,
                   }}
                 />
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Sold listings */}
+      {(soldListings ?? []).length > 0 && (
+        <section className="mb-10">
+          <h2 className="font-semibold text-navy mb-4 flex items-center gap-2">
+            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+            Sold ({(soldListings ?? []).length})
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {(soldListings as any[]).map((listing) => {
+              const sorted = (listing.listing_images ?? []).sort((a: any, b: any) => a.sort_order - b.sort_order);
+              const primaryImage = sorted.find((i: any) => i.is_primary)?.display_url ?? sorted[0]?.display_url ?? null;
+              return (
+                <div key={listing.id} className="rounded-xl border border-border overflow-hidden opacity-60">
+                  <div className="relative aspect-square bg-muted">
+                    {primaryImage ? (
+                      <Image
+                        src={primaryImage}
+                        alt={listing.title}
+                        fill
+                        className="object-cover grayscale"
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center">
+                        <span className="text-3xl opacity-20">🐴</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="rotate-[-20deg] border-4 border-red-500 text-red-500 font-black text-xl px-3 py-1 rounded-sm tracking-widest uppercase opacity-90">
+                        Sold
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-3">
+                    <p className="text-sm font-medium text-navy line-clamp-1">{listing.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{formatAUD(listing.price)}</p>
+                  </div>
+                </div>
               );
             })}
           </div>
