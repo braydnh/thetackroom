@@ -72,6 +72,8 @@ export default function EditListingForm({ listing }: { listing: ExistingListing 
     e.preventDefault();
     if (!title.trim() || priceCents <= 0 || !category || !condition) {
       toast.error("Please fill in all required fields.");
+    } else if (allowsShipping && shippingPrice.trim() === "") {
+      toast.error("Please enter a shipping cost (enter 0 for free shipping).");
       return;
     }
     if (!allowsShipping && !allowsPickup) {
@@ -359,7 +361,9 @@ export default function EditListingForm({ listing }: { listing: ExistingListing 
           {allowsShipping && (
             <div className="pl-4 border-l-2 border-olive/20 space-y-3">
               <div className="space-y-1.5">
-                <Label htmlFor="shippingPrice">Shipping cost (AUD)</Label>
+                <Label htmlFor="shippingPrice">
+                  Shipping cost (AUD) <span className="text-destructive">*</span>
+                </Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                   <Input

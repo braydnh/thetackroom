@@ -75,7 +75,8 @@ export default function NewListingForm() {
     form.category &&
     form.condition;
 
-  const canProceedToReview = form.allowsShipping || form.allowsPickup;
+  const shippingPriceValid = !form.allowsShipping || form.shippingPrice.trim() !== "";
+  const canProceedToReview = (form.allowsShipping || form.allowsPickup) && shippingPriceValid;
 
   async function handlePublish() {
     if (!canProceedToDelivery || !canProceedToReview) return;
@@ -470,7 +471,9 @@ export default function NewListingForm() {
             {form.allowsShipping && (
               <div className="pl-4 border-l-2 border-olive/20 space-y-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="shippingPrice">Shipping cost (AUD)</Label>
+                  <Label htmlFor="shippingPrice">
+                    Shipping cost (AUD) <span className="text-destructive">*</span>
+                  </Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                       $

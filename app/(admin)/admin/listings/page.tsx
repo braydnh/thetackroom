@@ -3,6 +3,7 @@ import { formatAUD } from "@/lib/utils/currency";
 import Link from "next/link";
 import Image from "next/image";
 import { SuspendListingButton } from "./SuspendListingButton";
+import { FeatureListingButton } from "./FeatureListingButton";
 
 const STATUS_COLOR: Record<string, string> = {
   active:    "bg-emerald-100 text-emerald-700",
@@ -36,6 +37,20 @@ export default async function AdminListingsPage({
   }
 
   const { data: listings } = await (query as any);
+
+  // Fetch active featured status for this page of listings
+  const listingIds: string[] = (listings ?? []).map((l: any) => l.id);
+  const { data: featuredRows } = listingIds.length
+    ? await admin
+        .from("featured_listings")
+        .select("id, listing_id, slot, ends_at")
+        .in("listing_id", listingIds)
+        .gt("ends_at", new Date().toISOString())
+    : { data: [] };
+
+  const featuredMap = Object.fromEntries(
+    (featuredRows ?? []).map((f: any) => [f.listing_id, f])
+  );
 
   const STATUSES = ["active", "draft", "reserved", "sold", "suspended", "deleted", "all"];
 
@@ -99,6 +114,7 @@ export default async function AdminListingsPage({
                   </div>
                 </div>
 
+                <FeatureListingButton listingId={listing.id} initialFeatured={featuredMap[listing.id] ?? null} />
                 <SuspendListingButton listingId={listing.id} currentStatus={listing.status} />
               </div>
             );

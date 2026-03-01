@@ -140,13 +140,25 @@ export default function OrderDetailPage() {
       .catch(() => setLoading(false));
   }, [id]);
 
-  // When arriving from a successful payment, poll until webhook updates the status
+  // When arriving from a successful payment, poll until webhook updates the status.
+  // After 5s if still pending, call verify-payment as a webhook fallback.
   useEffect(() => {
     if (!confirmed) return;
     let attempts = 0;
-    const interval = setInterval(() => {
+    let fallbackCalled = false;
+
+    const interval = setInterval(async () => {
       attempts++;
       if (attempts > 10) { clearInterval(interval); return; } // give up after 30s
+
+      // After 5s (attempt 2+) call the Stripe verify fallback if still pending
+      if (attempts === 2 && !fallbackCalled) {
+        fallbackCalled = true;
+        try {
+          await fetch(`/api/orders/${id}/verify-payment`, { method: "POST" });
+        } catch {}
+      }
+
       fetch(`/api/orders/${id}`)
         .then((r) => r.json())
         .then((data) => {
