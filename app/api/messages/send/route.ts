@@ -12,6 +12,29 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/resend";
 import { newMessageEmail } from "@/lib/emails";
 
+// Patterns that indicate off-platform contact or transaction attempts
+const BLOCKED_PATTERNS: { pattern: RegExp; reason: string }[] = [
+  // Phone numbers (Australian and international)
+  { pattern: /(\+?61|0)[2-9]\d{8}/, reason: "Phone numbers are not permitted in messages." },
+  { pattern: /\b04\d{2}[\s\-]?\d{3}[\s\-]?\d{3}\b/, reason: "Phone numbers are not permitted in messages." },
+  // Email addresses
+  { pattern: /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/, reason: "Email addresses are not permitted in messages." },
+  // Social media / off-platform contact
+  { pattern: /\bfacebook\b|\bfb\.com\b|\binstagram\b|\bwhatsapp\b|\bsnapchat\b|\btelegram\b|\bsignal\b|\btiktok\b/i, reason: "External contact details are not permitted. Please keep all communication within The Tack Room." },
+  // Off-platform payment requests
+  { pattern: /\bbank\s*transfer\b|\bbpay\b|\bosko\b|\bpayid\b|\bpaypal\b|\bcash\s*app\b|\bvenmo\b/i, reason: "Off-platform payment requests are not permitted. All transactions must go through The Tack Room." },
+  { pattern: /\boutside\s*(the\s*)?app\b|\boutside\s*(the\s*)?platform\b|\bbypass\b|\bavoid.*fee\b|\bskip.*fee\b/i, reason: "Off-platform transaction requests are not permitted." },
+  // Bank/account details
+  { pattern: /\bbank\s*details\b|\baccount\s*number\b|\bbsb\b/i, reason: "Bank details are not permitted in messages." },
+];
+
+function checkMessageContent(text: string): string | null {
+  for (const { pattern, reason } of BLOCKED_PATTERNS) {
+    if (pattern.test(text)) return reason;
+  }
+  return null;
+}
+
 export async function POST(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -20,6 +43,12 @@ export async function POST(req: Request) {
   const { conversation_id, body } = await req.json() as { conversation_id: string; body: string };
   if (!conversation_id || !body?.trim()) {
     return NextResponse.json({ error: "conversation_id and body are required" }, { status: 400 });
+  }
+
+  // Block off-platform contact and payment attempts
+  const blockReason = checkMessageContent(body.trim());
+  if (blockReason) {
+    return NextResponse.json({ error: blockReason, code: "CONTACT_INFO_DETECTED" }, { status: 422 });
   }
 
   const admin = createAdminClient();
