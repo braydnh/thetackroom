@@ -387,6 +387,18 @@ export default function EditListingForm({ listing }: { listing: ExistingListing 
                   placeholder="e.g. Via Australia Post, express available on request"
                 />
               </div>
+              <p className="text-xs text-muted-foreground">
+                Not sure what to charge?{" "}
+                <a
+                  href="https://auspost.com.au/parcels-mail/calculate-postage-delivery-times/#/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-olive underline hover:text-olive/80"
+                >
+                  Estimate with Australia Post
+                </a>
+                {" "}— use any destination postcode for a rough guide.
+              </p>
             </div>
           )}
         </div>
