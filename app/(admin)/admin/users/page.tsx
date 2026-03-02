@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Star } from "lucide-react";
 import { SuspendUserButton } from "./SuspendUserButton";
+import { DeleteUserButton } from "./DeleteUserButton";
 
 export default async function AdminUsersPage({
   searchParams,
@@ -76,7 +77,10 @@ export default async function AdminUsersPage({
               </div>
 
               {u.role !== "admin" && (
-                <SuspendUserButton userId={u.id} isSuspended={u.is_suspended} />
+                <div className="flex items-center gap-1">
+                  <SuspendUserButton userId={u.id} isSuspended={u.is_suspended} />
+                  <DeleteUserButton userId={u.id} username={u.username} />
+                </div>
               )}
             </div>
           ))
