@@ -44,6 +44,9 @@ export async function POST(req: Request) {
   if (!conversation_id || !body?.trim()) {
     return NextResponse.json({ error: "conversation_id and body are required" }, { status: 400 });
   }
+  if (body.length > 10000) {
+    return NextResponse.json({ error: "Message must be 10,000 characters or fewer." }, { status: 400 });
+  }
 
   // Block off-platform contact and payment attempts
   const blockReason = checkMessageContent(body.trim());

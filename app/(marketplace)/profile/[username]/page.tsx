@@ -47,7 +47,7 @@ export default async function SellerProfilePage({ params }: { params: Promise<{ 
       .eq("seller_id", profile.id)
       .eq("status", "sold")
       .order("created_at", { ascending: false })
-      .limit(12),
+      .limit(50),
     admin
       .from("reviews")
       .select("id, rating, comment, created_at, reviewer_id, profiles!reviewer_id(username, avatar_url)")

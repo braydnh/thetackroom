@@ -126,6 +126,9 @@ export default function OrderDetailPage() {
   const [reviewComment, setReviewComment] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [disputeReason, setDisputeReason] = useState("");
+  const [submittingDispute, setSubmittingDispute] = useState(false);
+  const [disputeSubmitted, setDisputeSubmitted] = useState(false);
 
   useEffect(() => {
     fetch(`/api/orders/${id}`)
@@ -202,6 +205,26 @@ export default function OrderDetailPage() {
       setOrder((prev) => prev ? { ...prev, status: "shipped", tracking_number: trackingNumber.trim(), shipping_carrier: carrier } : prev);
     }
     setSubmittingTracking(false);
+  }
+
+  async function handleSubmitDispute(e: React.FormEvent) {
+    e.preventDefault();
+    if (!disputeReason.trim()) return;
+    setSubmittingDispute(true);
+    const res = await fetch(`/api/orders/${id}/dispute`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: disputeReason }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      toast.error(data.error ?? "Failed to raise dispute");
+    } else {
+      toast.success("Dispute submitted. We'll be in touch within 1–2 business days.");
+      setDisputeSubmitted(true);
+      setOrder((prev) => prev ? { ...prev, status: "disputed" } : prev);
+    }
+    setSubmittingDispute(false);
   }
 
   async function handleSubmitReview(e: React.FormEvent) {
@@ -444,6 +467,51 @@ export default function OrderDetailPage() {
               Payout releases automatically on {new Date(order.dispute_window_ends_at).toLocaleString("en-AU")}.
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Buyer: raise a dispute during dispute window */}
+      {order.status === "dispute_window" && !order.is_seller && !disputeSubmitted && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 mb-6">
+          <div className="flex items-start gap-3 mb-4">
+            <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-amber-900">Something wrong with your order?</p>
+              <p className="text-xs text-amber-700 mt-1">
+                If your item didn't arrive, is damaged, or isn't as described, raise a dispute before the window closes.
+                Your payment will be held while we review it.
+              </p>
+            </div>
+          </div>
+          <form onSubmit={handleSubmitDispute} className="space-y-3">
+            <textarea
+              value={disputeReason}
+              onChange={(e) => setDisputeReason(e.target.value)}
+              placeholder="Describe the issue (e.g. item not as described, damaged, not received…)"
+              rows={3}
+              maxLength={1000}
+              required
+              className="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm text-navy placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/40 resize-none"
+            />
+            <Button
+              type="submit"
+              variant="outline"
+              className="w-full border-amber-400 text-amber-800 hover:bg-amber-100 hover:text-amber-900"
+              disabled={submittingDispute || !disputeReason.trim()}
+            >
+              {submittingDispute
+                ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting…</>
+                : "Raise a dispute"
+              }
+            </Button>
+          </form>
+        </div>
+      )}
+
+      {disputeSubmitted && (
+        <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 flex items-start gap-3 mb-6">
+          <CheckCircle2 className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-amber-800">Dispute submitted. We'll review and be in touch within 1–2 business days.</p>
         </div>
       )}
 

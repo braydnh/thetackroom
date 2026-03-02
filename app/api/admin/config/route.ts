@@ -23,7 +23,7 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "key and value required" }, { status: 400 });
   }
 
-  const ALLOWED_KEYS = ["commission_pct", "dispute_window_hours", "tracking_deadline_days"];
+  const ALLOWED_KEYS = ["commission_pct", "ambassador_commission_pct", "admin_commission_pct", "dispute_window_hours", "tracking_deadline_days"];
   if (!ALLOWED_KEYS.includes(key)) {
     return NextResponse.json({ error: "Unknown config key" }, { status: 400 });
   }

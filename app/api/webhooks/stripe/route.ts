@@ -210,7 +210,7 @@ export async function POST(req: Request) {
           type: "new_sale",
           title: "You've made a sale!",
           body: `${buyerName} purchased "${listingTitle}"`,
-          link: `/selling/orders/${orderId}`,
+          link: `/orders/${orderId}`,
         });
 
         // In-app notification for buyer

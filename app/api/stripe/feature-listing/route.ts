@@ -15,8 +15,8 @@ import Stripe from "stripe";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01-28.clover" });
 
 const PRICING: Record<string, Record<number, number>> = {
-  homepage:    { 7: 2499, 14: 3999 },
-  search_top:  { 7: 1499, 14: 2499 },
+  homepage:    { 7: 1099, 14: 1899 },
+  search_top:  { 7: 1099, 14: 1899 },
 };
 
 export async function POST(req: Request) {

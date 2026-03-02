@@ -1,20 +1,26 @@
 import { createClient } from "@/lib/supabase/server";
-import Link from "next/link";
-import { ListingCard, type ListingCardData } from "./ListingCard";
-import { Zap } from "lucide-react";
+import { type ListingCardData } from "./ListingCard";
+import { FeaturedSlideshow } from "./FeaturedSlideshow";
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 interface FeaturedListingsProps {
   slot: "homepage" | "search_top";
-  limit?: number;
   /** IDs to exclude (already shown elsewhere) */
   excludeIds?: string[];
-  /** Show placeholder slots when empty (homepage only) */
+  /** Show placeholder carousel when empty (homepage only) */
   showEmpty?: boolean;
 }
 
 export async function FeaturedListings({
   slot,
-  limit = 4,
   excludeIds = [],
   showEmpty = false,
 }: FeaturedListingsProps) {
@@ -22,31 +28,22 @@ export async function FeaturedListings({
 
   const now = new Date().toISOString();
 
-  // Get active featured listing IDs for this slot
-  let featuredQuery = supabase
+  const { data: featuredRows } = await supabase
     .from("featured_listings")
     .select("listing_id")
     .eq("slot", slot)
     .lte("starts_at", now)
-    .gt("ends_at", now)
-    .limit(limit);
+    .gt("ends_at", now);
 
-  const { data: featuredRows } = await featuredQuery;
-
-  if (!featuredRows || featuredRows.length === 0) {
-    if (!showEmpty) return null;
-    return <FeaturedEmptySlots count={limit} />;
-  }
-
-  const featuredIds = featuredRows
+  const featuredIds = (featuredRows ?? [])
     .map((r: any) => r.listing_id as string)
     .filter((id: string) => !excludeIds.includes(id));
+
   if (featuredIds.length === 0) {
     if (!showEmpty) return null;
-    return <FeaturedEmptySlots count={limit} />;
+    return <FeaturedSlideshow listings={[]} />;
   }
 
-  // Fetch actual listing data
   const { data: rows } = await supabase
     .from("listings")
     .select(
@@ -59,7 +56,7 @@ export async function FeaturedListings({
 
   if (!rows || rows.length === 0) {
     if (!showEmpty) return null;
-    return <FeaturedEmptySlots count={limit} />;
+    return <FeaturedSlideshow listings={[]} />;
   }
 
   const listings: ListingCardData[] = (rows as any[]).map((r) => {
@@ -87,46 +84,5 @@ export async function FeaturedListings({
     };
   });
 
-  const emptySlots = limit - listings.length;
-
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-      {listings.map((listing) => (
-        <ListingCard key={listing.id} listing={listing} featured />
-      ))}
-      {showEmpty && emptySlots > 0 &&
-        Array.from({ length: emptySlots }).map((_, i) => (
-          <Link
-            key={`empty-${i}`}
-            href="/selling"
-            className="group flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-white hover:border-olive hover:bg-olive/5 transition-colors aspect-[3/4] text-center px-4"
-          >
-            <Zap className="h-5 w-5 text-muted-foreground group-hover:text-olive transition-colors" />
-            <span className="text-xs font-medium text-muted-foreground group-hover:text-olive transition-colors">
-              Feature your listing here
-            </span>
-          </Link>
-        ))
-      }
-    </div>
-  );
-}
-
-function FeaturedEmptySlots({ count }: { count: number }) {
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-      {Array.from({ length: count }).map((_, i) => (
-        <Link
-          key={i}
-          href="/selling"
-          className="group flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-white hover:border-olive hover:bg-olive/5 transition-colors aspect-[3/4] text-center px-4"
-        >
-          <Zap className="h-5 w-5 text-muted-foreground group-hover:text-olive transition-colors" />
-          <span className="text-xs font-medium text-muted-foreground group-hover:text-olive transition-colors">
-            Feature your listing here
-          </span>
-        </Link>
-      ))}
-    </div>
-  );
+  return <FeaturedSlideshow listings={shuffle(listings)} />;
 }

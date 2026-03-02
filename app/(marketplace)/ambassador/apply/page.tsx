@@ -123,37 +123,70 @@ export default function AmbassadorApplyPage() {
           <Star className="h-6 w-6 text-olive" />
         </div>
         <h1 className="text-3xl font-bold text-navy mb-2" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
-          Become an Ambassador
+          Become a The Tack Room Ambassador
         </h1>
         <p className="text-muted-foreground leading-relaxed">
-          Love equestrian sport and want to support the community? Apply to become a Tack Room Ambassador and earn perks as we grow together.
+          The Tack Room Ambassador Program is designed for passionate equestrians who believe in shopping smarter and supporting a more sustainable horse community.
         </p>
       </div>
 
       {/* Welcome message */}
-      <div className="rounded-xl border border-olive/20 bg-olive/5 p-5 mb-8 space-y-3 text-sm text-navy/80 leading-relaxed">
-        <p>Hey 🤎 thanks so much for applying to be an Ambassador — we&apos;re so excited you&apos;re interested!</p>
+      <div className="rounded-xl border border-olive/20 bg-olive/5 p-6 mb-8 space-y-5 text-sm text-navy/80 leading-relaxed">
         <p>
-          As an Ambassador, we ask that you share your buying/selling experience on the platform, post occasional stories or reels featuring your listings or purchases, engage with The Tack Room as we grow, and promote The Tack Room within your community.
+          Our ambassadors help us grow by sharing their genuine buying and selling experiences while representing The Tack Room within their own riding circles.
         </p>
-        <p>In return, you&apos;ll receive the perks outlined in our Ambassador search post ✨</p>
-        <p className="font-medium text-navy">To continue your application, please fill in the details below:</p>
-        <ol className="list-none space-y-1 pl-0">
-          {[
-            "Full name",
-            "Email address",
-            "Instagram handle (and any other social accounts)",
-            "Your location (city/state)",
-            "A bit about yourself and your riding — what you love, how often you ride, and your discipline(s)",
-            "Why you'd like to be an Ambassador and why you'd be a great fit",
-          ].map((item, i) => (
-            <li key={i} className="flex items-start gap-2">
-              <span className="font-semibold text-olive flex-shrink-0">{i + 1}.</span>
-              <span>{item}</span>
-            </li>
-          ))}
-        </ol>
-        <p>We&apos;ll be selecting ambassadors in the coming weeks and would love to see you engaging with our posts in the meantime 🌟</p>
+
+        <hr className="border-olive/20" />
+
+        <div className="space-y-3">
+          <p className="font-semibold text-navy">What We Ask From Our Ambassadors</p>
+          <p>As a The Tack Room Ambassador, you will:</p>
+          <ul className="space-y-1.5 pl-1">
+            {[
+              "Share your buying and selling experience on the platform",
+              "Post stories, TikToks or reels featuring your listings or purchases",
+              "Engage with and support The Tack Room on social media",
+              "Promote The Tack Room within your local equestrian community",
+              "Represent the brand in a positive and authentic way",
+            ].map((item, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span className="text-olive flex-shrink-0 mt-0.5">•</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+          <p>We value consistency, creativity, and genuine enthusiasm for pre-loved tack.</p>
+        </div>
+
+        <hr className="border-olive/20" />
+
+        <div className="space-y-3">
+          <p className="font-semibold text-navy">Ambassador Perks</p>
+          <p>In return for your support, ambassadors receive:</p>
+          <ul className="space-y-1.5 pl-1">
+            {[
+              "Early access to new features and launches",
+              "Priority access to new campaigns and opportunities",
+              "Exclusive selling discounts",
+              "Increased exposure through reposts and features on our social channels",
+            ].map((item, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span className="text-olive flex-shrink-0 mt-0.5">•</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+          <p>We are building something long-term and want our ambassadors to grow with us.</p>
+        </div>
+
+        <hr className="border-olive/20" />
+
+        <p>
+          Ambassadors are selected on a rolling basis. We encourage applicants to engage with our content and community while applications are being reviewed.
+        </p>
+        <p>
+          We look forward to learning more about you and welcoming the next group of The Tack Room Ambassadors.
+        </p>
         <p className="font-medium text-navy">Can&apos;t wait to learn more about you!<br />The Tack Room Team</p>
       </div>
 

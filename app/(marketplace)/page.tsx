@@ -16,9 +16,11 @@ const CATEGORY_PILLS = [
   { label: "Bridles", href: "/listings?category=horse&sub=bridles" },
   { label: "Boots & Bandages", href: "/listings?category=horse&sub=boots-bandages" },
   { label: "Girths", href: "/listings?category=horse&sub=girths" },
-  { label: "Clothing", href: "/listings?category=rider&sub=clothing" },
+  { label: "Women's", href: "/listings?category=rider&sub=womens-clothing" },
+  { label: "Men's", href: "/listings?category=rider&sub=mens-clothing" },
   { label: "Helmets", href: "/listings?category=rider&sub=helmets-safety" },
-  { label: "Footwear", href: "/listings?category=rider&sub=footwear" },
+  { label: "Women's Footwear", href: "/listings?category=rider&sub=womens-footwear" },
+  { label: "Men's Footwear", href: "/listings?category=rider&sub=mens-footwear" },
   { label: "Under $100", href: "/listings?max=100" },
 ];
 
@@ -232,7 +234,7 @@ export default async function HomePage() {
             Get featured <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
-        <FeaturedListings slot="homepage" limit={4} showEmpty />
+        <FeaturedListings slot="homepage" showEmpty />
       </section>
 
       {/* ── Just listed ── */}

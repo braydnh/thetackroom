@@ -18,9 +18,11 @@ const CATEGORY_PILLS = [
   { label: "Bridles", href: "/listings?category=horse&sub=bridles" },
   { label: "Boots & Bandages", href: "/listings?category=horse&sub=boots-bandages" },
   { label: "Girths", href: "/listings?category=horse&sub=girths" },
-  { label: "Clothing", href: "/listings?category=rider&sub=clothing" },
+  { label: "Women's", href: "/listings?category=rider&sub=womens-clothing" },
+  { label: "Men's", href: "/listings?category=rider&sub=mens-clothing" },
   { label: "Helmets", href: "/listings?category=rider&sub=helmets-safety" },
-  { label: "Footwear", href: "/listings?category=rider&sub=footwear" },
+  { label: "Women's Footwear", href: "/listings?category=rider&sub=womens-footwear" },
+  { label: "Men's Footwear", href: "/listings?category=rider&sub=mens-footwear" },
   { label: "Under $100", href: "/listings?max=100" },
 ];
 
@@ -141,7 +143,7 @@ export default async function ListingsPage({
           {showFeatured && (
             <div className="mb-8">
               <Suspense fallback={null}>
-                <FeaturedListings slot="search_top" limit={4} />
+                <FeaturedListings slot="search_top" />
               </Suspense>
             </div>
           )}

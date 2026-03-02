@@ -102,7 +102,7 @@ export default async function AdminOverviewPage() {
             {(recentOrders as any[]).map((order) => (
               <Link
                 key={order.id}
-                href={`/admin/orders/${order.id}`}
+                href={`/orders/${order.id}`}
                 className="flex items-center justify-between px-5 py-3 bg-white hover:bg-stone-50 transition-colors"
               >
                 <div>

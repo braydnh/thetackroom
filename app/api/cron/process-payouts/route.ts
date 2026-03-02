@@ -34,10 +34,10 @@ import { formatAUD } from "@/lib/utils/currency";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01-28.clover" });
 
 export async function GET(req: Request) {
-  // Verify cron secret
+  // Verify cron secret — always required; missing secret is a misconfiguration
   const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -325,7 +325,7 @@ export async function GET(req: Request) {
             type: "tracking_deadline_expired",
             title: "Shipping deadline missed",
             body: `You missed the shipping deadline for "${listingTitle}". The buyer has been offered a refund.`,
-            link: `/selling/orders/${order.id}`,
+            link: `/orders/${order.id}`,
           }),
           admin.from("notifications").insert({
             user_id: (order as any).buyer_id,

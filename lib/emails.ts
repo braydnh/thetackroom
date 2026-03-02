@@ -549,6 +549,80 @@ export function trackingDeadlineExpiredBuyerEmail({
   `);
 }
 
+export function disputeRaisedBuyerEmail({
+  buyerName,
+  listingTitle,
+  reason,
+  orderId,
+}: {
+  buyerName: string;
+  listingTitle: string;
+  reason: string;
+  orderId: string;
+}) {
+  return wrapper(`
+    <div style="background:#92400e;border-radius:6px;padding:14px 20px;margin-bottom:24px">
+      <p style="margin:0;font-size:14px;font-weight:700;color:#ffffff">Dispute received — we're on it</p>
+    </div>
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      Your dispute has been submitted
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${buyerName}, we've received your dispute for <strong>${listingTitle}</strong>.
+    </p>
+    <div style="margin:24px 0;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:20px 24px">
+      <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:0.5px">Your reason</p>
+      <p style="margin:0;font-size:14px;color:#444;line-height:1.6;font-style:italic">"${reason}"</p>
+    </div>
+    <p style="margin:0;font-size:15px;color:#444;line-height:1.6">
+      Your payment is being held securely while we review this. Our team will be in touch within <strong>1–2 business days</strong>.
+    </p>
+    <p style="margin:16px 0 0;font-size:14px;color:#666;line-height:1.6">
+      If you have photos or additional evidence, email us at <a href="mailto:contact@tackroomshop.com.au" style="color:#4a5e35">contact@tackroomshop.com.au</a> with your order ID and attachments.
+    </p>
+    <div style="text-align:center">
+      ${btn("View your order", `https://tackroomshop.com.au/orders/${orderId}`)}
+    </div>
+  `);
+}
+
+export function disputeRaisedSellerEmail({
+  sellerName,
+  listingTitle,
+  reason,
+  orderId,
+}: {
+  sellerName: string;
+  listingTitle: string;
+  reason: string;
+  orderId: string;
+}) {
+  return wrapper(`
+    <div style="background:#92400e;border-radius:6px;padding:14px 20px;margin-bottom:24px">
+      <p style="margin:0;font-size:14px;font-weight:700;color:#ffffff">A dispute has been raised on your order</p>
+    </div>
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      The buyer has raised a dispute
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Hi ${sellerName}, the buyer has raised a dispute for <strong>${listingTitle}</strong>.
+    </p>
+    <div style="margin:24px 0;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:20px 24px">
+      <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:0.5px">Buyer's reason</p>
+      <p style="margin:0;font-size:14px;color:#444;line-height:1.6;font-style:italic">"${reason}"</p>
+    </div>
+    <p style="margin:0;font-size:15px;color:#444;line-height:1.6">
+      Your payout has been paused while our team reviews the dispute. We aim to resolve all disputes within <strong>1–2 business days</strong>.
+    </p>
+    <p style="margin:16px 0 0;font-size:14px;color:#666;line-height:1.6">
+      If you have evidence that the item was as described and delivered correctly, reply to this email with photos or tracking information.
+    </p>
+    <div style="text-align:center">
+      ${btn("View order", `https://tackroomshop.com.au/orders/${orderId}`)}
+    </div>
+  `);
+}
+
 export function disputeRefundBuyerEmail({
   buyerName,
   listingTitle,

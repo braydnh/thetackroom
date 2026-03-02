@@ -30,8 +30,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar user={profile} />
-      <div className="flex flex-1">
-        {/* Sidebar */}
+      <div className="flex flex-1 min-w-0">
+        {/* Sidebar — desktop only */}
         <aside className="w-56 flex-shrink-0 border-r border-border bg-white hidden md:block">
           <nav className="p-4 space-y-1 sticky top-16">
             {NAV.map(({ href, label, icon: Icon }) => (
@@ -47,20 +47,23 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </nav>
         </aside>
 
-        {/* Mobile nav */}
-        <div className="md:hidden sticky top-16 z-10 border-b border-border bg-white flex overflow-x-auto gap-1 px-4 py-2">
-          {NAV.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex-shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-navy hover:bg-muted whitespace-nowrap"
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
+        {/* Right column: mobile nav on top, content below */}
+        <div className="flex flex-col flex-1 min-w-0">
+          {/* Mobile nav */}
+          <div className="md:hidden sticky top-16 z-10 border-b border-border bg-white flex overflow-x-auto gap-1 px-4 py-2">
+            {NAV.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="flex-shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-navy hover:bg-muted whitespace-nowrap"
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
 
-        <main className="flex-1 bg-background min-w-0">{children}</main>
+          <main className="flex-1 bg-background min-w-0">{children}</main>
+        </div>
       </div>
     </div>
   );
