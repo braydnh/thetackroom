@@ -11,7 +11,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createAfterShipTracking } from "@/lib/aftership";
+import { create17TrackTracking } from "@/lib/17track";
 import { sendEmail } from "@/lib/resend";
 import { itemShippedBuyerEmail } from "@/lib/emails";
 
@@ -61,13 +61,6 @@ export async function POST(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Fetch listing title for AfterShip label
-  const { data: listing } = await admin
-    .from("listings")
-    .select("title")
-    .eq("id", order.listing_id)
-    .single();
-
   // Email buyer + in-app notification (non-blocking)
   try {
     const listingTitle = (order as any).listings?.title ?? "Your item";
@@ -103,23 +96,22 @@ export async function POST(
     console.error("Tracking email/notification failed:", err);
   }
 
-  // Create AfterShip tracking record (non-blocking — save tracking ID if created)
+  // Create 17track tracking record (non-blocking — save tracking number as ID if created)
   try {
-    const aftership = await createAfterShipTracking({
+    const result = await create17TrackTracking({
       trackingNumber: tracking_number.trim(),
       carrier: carrier ?? "other",
       orderId: id,
-      title: (listing as any)?.title ?? "Order",
     });
-    if (aftership?.tracking_id) {
+    if (result?.tracking_id) {
       await admin
         .from("orders")
-        .update({ aftership_tracking_id: aftership.tracking_id })
+        .update({ aftership_tracking_id: result.tracking_id })
         .eq("id", id);
     }
   } catch (err) {
     // Non-fatal — order is already marked shipped
-    console.error("AfterShip tracking creation failed:", err);
+    console.error("17track tracking creation failed:", err);
   }
 
   return NextResponse.json({ success: true });
