@@ -23,9 +23,34 @@ const MAINTENANCE_BYPASS_PATHS = [
 export async function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
+  let supabaseResponse = NextResponse.next({ request });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  const { data: { user } } = await supabase.auth.getUser();
+
   // ── Maintenance mode ──────────────────────────────────────────────────────
+  // Logged-in users always get through. Everyone else sees the coming soon page
+  // unless they have the bypass cookie or preview key.
   const maintenanceMode = process.env.MAINTENANCE_MODE === "1";
-  if (maintenanceMode && !MAINTENANCE_BYPASS_PATHS.some((p) => pathname.startsWith(p))) {
+  if (maintenanceMode && !user && !MAINTENANCE_BYPASS_PATHS.some((p) => pathname.startsWith(p))) {
     const bypassKey = process.env.MAINTENANCE_KEY;
 
     // Set bypass cookie when correct key is supplied as ?preview=KEY
@@ -51,29 +76,6 @@ export async function proxy(request: NextRequest) {
     }
   }
   // ─────────────────────────────────────────────────────────────────────────
-
-  let supabaseResponse = NextResponse.next({ request });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-
-  const { data: { user } } = await supabase.auth.getUser();
 
   // Redirect unauthenticated users away from protected routes
   const isProtected = PROTECTED_PATHS.some((p) => pathname.startsWith(p));
