@@ -55,7 +55,7 @@ async function handleDelivery(tracking: any) {
   if (orderId) {
     query = query.eq("id", orderId) as any;
   } else {
-    query = query.eq("aftership_tracking_id", trackingNumber) as any;
+    query = query.eq("aftership_tracking_id", trackingNumber!) as any;
   }
 
   const { data: order } = await (query as any).single();
