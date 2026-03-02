@@ -157,3 +157,8 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ received: true });
 }
+
+// 17track sends a GET to verify the URL is reachable before saving
+export async function GET() {
+  return NextResponse.json({ ok: true });
+}
