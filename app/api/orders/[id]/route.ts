@@ -51,19 +51,25 @@ export async function GET(
   const isSeller = order.seller_id === user.id;
   const otherPartyId = isSeller ? order.buyer_id : order.seller_id;
 
-  // Fetch listing info
-  const { data: rawListingData } = await admin
-    .from("listings")
-    .select("id, title, condition, brand, listing_images(display_url, is_primary, sort_order)")
-    .eq("id", order.listing_id)
-    .single();
-
-  // Fetch other party's username
-  const { data: otherProfile } = await admin
-    .from("profiles")
-    .select("username")
-    .eq("id", otherPartyId)
-    .single();
+  // Fetch listing info, other party username, and whether buyer has already reviewed
+  const [{ data: rawListingData }, { data: otherProfile }, { data: existingReview }] = await Promise.all([
+    admin
+      .from("listings")
+      .select("id, title, condition, brand, listing_images(display_url, is_primary, sort_order)")
+      .eq("id", order.listing_id)
+      .single(),
+    admin
+      .from("profiles")
+      .select("username")
+      .eq("id", otherPartyId)
+      .single(),
+    admin
+      .from("reviews")
+      .select("id")
+      .eq("order_id", id)
+      .eq("reviewer_id", user.id)
+      .maybeSingle(),
+  ]);
 
   const raw = rawListingData as any;
   const images = (raw?.listing_images ?? []) as { display_url: string; is_primary: boolean; sort_order: number }[];
@@ -93,5 +99,6 @@ export async function GET(
       brand: raw?.brand ?? null,
     },
     other_party_username: otherProfile?.username ?? "user",
+    has_reviewed: !!existingReview,
   });
 }

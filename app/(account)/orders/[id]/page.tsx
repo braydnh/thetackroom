@@ -41,6 +41,7 @@ interface OrderDetail {
     brand: string | null;
   };
   other_party_username: string;
+  has_reviewed: boolean;
 }
 
 const STATUS_STEPS_SHIPPING = [
@@ -138,6 +139,7 @@ export default function OrderDetailPage() {
         setOrder(data);
         if (data.tracking_number) setTrackingNumber(data.tracking_number);
         if (data.shipping_carrier) setCarrier(data.shipping_carrier);
+        if (data.has_reviewed) setReviewSubmitted(true);
         setLoading(false);
       })
       .catch(() => setLoading(false));
