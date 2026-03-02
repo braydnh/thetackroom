@@ -28,8 +28,6 @@ import {
   trackingDeadlineExpiredBuyerEmail,
   payoutFailedSellerEmail,
   trackingReminderEmail,
-  itemDeliveredSellerEmail,
-  itemDeliveredBuyerEmail,
 } from "@/lib/emails";
 import { formatAUD } from "@/lib/utils/currency";
 
@@ -269,78 +267,6 @@ export async function GET(req: Request) {
     ...(reminder6hOrders ?? []).map((o: any) => sendTrackingReminder(o, "6h")),
     ...(reminder2hOrders ?? []).map((o: any) => sendTrackingReminder(o, "2h")),
   ]);
-
-  // ── Shipped orders with no delivery scan after 7 days → open dispute window ──
-  // Fallback for when 17track doesn't fire a delivery webhook.
-  // Uses updated_at as a proxy for shipped_at (set when tracking was submitted).
-  const sevenDaysAgo = new Date(nowMs - 7 * 24 * H).toISOString();
-  const { data: stalledOrders } = await admin
-    .from("orders")
-    .select("id, seller_id, buyer_id, listing_id, listings(title)")
-    .eq("status", "shipped")
-    .eq("pickup_method", "shipping")
-    .lt("updated_at", sevenDaysAgo)
-    .limit(20);
-
-  for (const order of (stalledOrders ?? [])) {
-    try {
-      const disputeWindowEndsAt = new Date(nowMs + 48 * H).toISOString();
-      await admin.from("orders").update({
-        status: "dispute_window",
-        dispute_window_ends_at: disputeWindowEndsAt,
-      }).eq("id", order.id);
-
-      try {
-        const listingTitle = (order as any).listings?.title ?? "Your item";
-        const [{ data: sellerProfile }, sellerAuth, { data: buyerProfile }, buyerAuth] =
-          await Promise.all([
-            admin.from("profiles").select("display_name, username").eq("id", (order as any).seller_id).single(),
-            admin.auth.admin.getUserById((order as any).seller_id),
-            admin.from("profiles").select("display_name, username").eq("id", (order as any).buyer_id).single(),
-            admin.auth.admin.getUserById((order as any).buyer_id),
-          ]);
-        const sellerEmail = (sellerAuth as any).data?.user?.email;
-        const buyerEmail = (buyerAuth as any).data?.user?.email;
-        const sellerName = sellerProfile?.display_name ?? sellerProfile?.username ?? "there";
-        const buyerName = buyerProfile?.display_name ?? buyerProfile?.username ?? "there";
-
-        if (sellerEmail) {
-          await sendEmail({
-            to: sellerEmail,
-            subject: `Your item has been delivered — ${listingTitle}`,
-            html: itemDeliveredSellerEmail({ sellerName, listingTitle, orderId: order.id }),
-          });
-        }
-        await admin.from("notifications").insert({
-          user_id: (order as any).seller_id,
-          type: "item_delivered",
-          title: "Your item has been delivered!",
-          body: `${listingTitle} was delivered. Your payout will be released shortly.`,
-          link: `/orders/${order.id}`,
-        });
-        if (buyerEmail) {
-          await sendEmail({
-            to: buyerEmail,
-            subject: `Your item has been delivered — ${listingTitle}`,
-            html: itemDeliveredBuyerEmail({ buyerName, listingTitle, disputeWindowEndsAt, orderId: order.id }),
-          });
-        }
-        await admin.from("notifications").insert({
-          user_id: (order as any).buyer_id,
-          type: "dispute_window",
-          title: "Your item has been delivered!",
-          body: `You have 48 hours to raise a dispute for "${listingTitle}". After that, the seller will be paid out.`,
-          link: `/orders/${order.id}`,
-        });
-      } catch (notifyErr) {
-        console.error(`Stalled order notifications failed for ${order.id}:`, notifyErr);
-      }
-
-      results.push({ order_id: order.id, status: "ok", detail: "stalled_shipped_auto_completed" });
-    } catch (err: any) {
-      results.push({ order_id: order.id, status: "error", detail: err.message });
-    }
-  }
 
   // Also handle: tracking deadline expired without tracking submission → offer refund
   const trackingDeadline = new Date().toISOString();
