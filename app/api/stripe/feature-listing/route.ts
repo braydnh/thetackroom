@@ -69,6 +69,7 @@ export async function POST(req: Request) {
         duration_days: String(duration_days),
         ends_at,
       },
+      statement_descriptor: "THE TACK ROOM",
       description: `Boost: "${listing.title}" — ${slot} for ${duration_days} days`,
     });
 

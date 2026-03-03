@@ -163,6 +163,7 @@ export async function POST(req: Request) {
         seller_id: listing.seller_id,
         seller_stripe_account: seller.stripe_account_id,
       },
+      statement_descriptor: "THE TACK ROOM",
       description: `Purchase: "${listing.title}"`,
     });
 
