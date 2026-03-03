@@ -403,6 +403,8 @@ export default function OrderDetailPage() {
                 <option value="startrack">StarTrack</option>
                 <option value="sendle">Sendle</option>
                 <option value="courier_please">Courier Please</option>
+                <option value="fastway">Fastway / Aramex</option>
+                <option value="toll">Toll</option>
                 <option value="dhl">DHL</option>
                 <option value="tnt">TNT</option>
                 <option value="other">Other</option>

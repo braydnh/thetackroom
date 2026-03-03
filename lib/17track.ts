@@ -13,9 +13,11 @@ const CARRIER_CODE_MAP: Record<string, number> = {
   startrack: 100038,
   sendle: 100024,
   courier_please: 100018,
+  fastway: 100064, // Fastway / Aramex Australia
+  toll: 100045,
   dhl: 100002,
   tnt: 100058,
-  other: 100066, // fallback to AusPost
+  other: 0, // 0 = auto-detect carrier
 };
 
 export function to17TrackCode(carrier: string): number {
