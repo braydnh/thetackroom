@@ -15,6 +15,7 @@ const CARRIER_CODE_MAP: Record<string, number> = {
   courier_please: 100018,
   fastway: 100064, // Fastway / Aramex Australia
   toll: 100045,
+  imile: 190438,
   dhl: 100002,
   tnt: 100058,
   other: 0, // 0 = auto-detect carrier
