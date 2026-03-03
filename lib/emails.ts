@@ -57,7 +57,7 @@ export function welcomeEmail(firstName: string) {
       <li>Message sellers directly</li>
     </ul>
     <div style="text-align:center">
-      ${btn("Browse Listings", "https://tackroomshop.com.au/browse")}
+      ${btn("Browse Listings", "https://tackroomshop.com.au/listings")}
     </div>
   `);
 }
@@ -197,6 +197,9 @@ export function itemShippedBuyerEmail({
     startrack: "StarTrack",
     sendle: "Sendle",
     courier_please: "Courier Please",
+    fastway: "Fastway / Aramex",
+    toll: "Toll",
+    imile: "iMile",
     dhl: "DHL",
     tnt: "TNT",
     other: "Other carrier",
@@ -333,7 +336,7 @@ export function newOrderEmail({
       Please ship the item promptly and add your tracking number in your dashboard.
     </p>
     <div style="text-align:center">
-      ${btn("View order", `https://tackroomshop.com.au/selling/orders/${orderId}`)}
+      ${btn("View order", `https://tackroomshop.com.au/orders/${orderId}`)}
     </div>
   `);
 }
@@ -458,7 +461,7 @@ export function trackingReminderEmail({
       Open your order in the seller dashboard, enter your tracking number and carrier, then click Save.
     </p>
     <div style="text-align:center">
-      ${btn("Add tracking number", `https://tackroomshop.com.au/selling/orders/${orderId}`)}
+      ${btn("Add tracking number", `https://tackroomshop.com.au/orders/${orderId}`)}
     </div>
   `);
 }
@@ -516,7 +519,7 @@ export function trackingDeadlineExpiredSellerEmail({
       If you have already shipped the item, contact us at <a href="mailto:contact@tackroomshop.com.au" style="color:#4a5e35">contact@tackroomshop.com.au</a> as soon as possible with your tracking details.
     </p>
     <div style="text-align:center">
-      ${btn("View order", `https://tackroomshop.com.au/selling/orders/${orderId}`)}
+      ${btn("View order", `https://tackroomshop.com.au/orders/${orderId}`)}
     </div>
   `);
 }
@@ -683,7 +686,7 @@ export function disputeRefundSellerEmail({
       If you believe this decision was made in error, contact us at <a href="mailto:contact@tackroomshop.com.au" style="color:#4a5e35">contact@tackroomshop.com.au</a>.
     </p>
     <div style="text-align:center">
-      ${btn("View order", `https://tackroomshop.com.au/selling/orders/${orderId}`)}
+      ${btn("View order", `https://tackroomshop.com.au/orders/${orderId}`)}
     </div>
   `);
 }
@@ -723,7 +726,7 @@ export function disputeReleasedSellerEmail({
       Funds will arrive in your connected Stripe account within 1–2 business days.
     </p>
     <div style="text-align:center">
-      ${btn("View order", `https://tackroomshop.com.au/selling/orders/${orderId}`)}
+      ${btn("View order", `https://tackroomshop.com.au/orders/${orderId}`)}
     </div>
   `);
 }
