@@ -41,6 +41,27 @@ export async function DELETE(
     return NextResponse.json({ error: "Cannot delete an admin account" }, { status: 400 });
   }
 
+  // Block deletion if user has non-pending orders (would lose transaction history)
+  const { data: activeOrders } = await admin
+    .from("orders")
+    .select("id")
+    .or(`buyer_id.eq.${id},seller_id.eq.${id}`)
+    .not("status", "eq", "pending_payment");
+
+  if (activeOrders && activeOrders.length > 0) {
+    return NextResponse.json(
+      { error: "Cannot delete: user has orders. Suspend the account instead." },
+      { status: 400 }
+    );
+  }
+
+  // Delete any abandoned pending_payment orders (no transaction took place)
+  await admin
+    .from("orders")
+    .delete()
+    .or(`buyer_id.eq.${id},seller_id.eq.${id}`)
+    .eq("status", "pending_payment");
+
   // Delete profile first — clears mobile_number and all profile data
   const { error: profileError } = await admin
     .from("profiles")
