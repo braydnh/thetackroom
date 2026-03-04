@@ -160,7 +160,11 @@ function SignupForm() {
       setLoading(false);
     } else {
       // Send welcome email (non-blocking)
-      fetch("/api/auth/send-welcome", { method: "POST" }).catch(() => {});
+      fetch("/api/auth/send-welcome", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, firstName: firstName.trim() }),
+      }).catch(() => {});
       router.push(searchParams.get("next") ?? "/selling");
     }
   }
