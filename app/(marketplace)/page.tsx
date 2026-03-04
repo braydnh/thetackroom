@@ -41,7 +41,7 @@ async function NewestListings() {
     )
     .eq("status", "active")
     .order("created_at", { ascending: false })
-    .limit(12);
+    .limit(8);
 
   const listings: ListingCardData[] = (rows ?? []).map((r: any) => {
     const images: { display_url: string; is_primary: boolean; sort_order: number }[] =
