@@ -41,7 +41,7 @@ async function NewestListings() {
     )
     .eq("status", "active")
     .order("created_at", { ascending: false })
-    .limit(8);
+    .limit(10);
 
   const listings: ListingCardData[] = (rows ?? []).map((r: any) => {
     const images: { display_url: string; is_primary: boolean; sort_order: number }[] =
@@ -80,7 +80,7 @@ async function NewestListings() {
     );
   }
 
-  return <ListingGrid listings={listings} />;
+  return <ListingGrid listings={listings} mobileLimit={6} />;
 }
 
 async function getAmbassadorListings(): Promise<AmbassadorListing[]> {

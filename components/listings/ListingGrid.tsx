@@ -8,6 +8,7 @@ interface ListingGridProps {
   favouritedIds?: Set<string>;
   onFavouriteToggle?: (id: string) => void;
   emptyMessage?: string;
+  mobileLimit?: number;
 }
 
 export function ListingGrid({
@@ -17,6 +18,7 @@ export function ListingGrid({
   favouritedIds,
   onFavouriteToggle,
   emptyMessage = "No listings found.",
+  mobileLimit,
 }: ListingGridProps) {
   if (loading) {
     return (
@@ -46,13 +48,14 @@ export function ListingGrid({
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-      {listings.map((listing) => (
+      {listings.map((listing, i) => (
         <ListingCard
           key={listing.id}
           listing={listing}
           showFavourite={showFavourite}
           isFavourited={favouritedIds?.has(listing.id)}
           onFavouriteToggle={onFavouriteToggle}
+          className={mobileLimit !== undefined && i >= mobileLimit ? "hidden sm:block" : undefined}
         />
       ))}
     </div>
