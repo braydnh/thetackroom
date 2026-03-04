@@ -86,5 +86,8 @@ export async function POST(
   // Mark listing sold
   await admin.from("listings").update({ status: "sold" }).eq("id", (order as any).listing_id);
 
+  // Increment seller's total_sales count
+  await (admin as any).rpc("increment_total_sales", { user_id: (order as any).seller_id });
+
   return NextResponse.json({ success: true });
 }
