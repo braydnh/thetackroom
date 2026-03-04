@@ -48,10 +48,12 @@ export async function POST(
     return NextResponse.json({ error: "Order is not awaiting shipment" }, { status: 400 });
   }
 
+  const cleanTracking = tracking_number.replace(/\s+/g, "").trim();
+
   const { error } = await admin
     .from("orders")
     .update({
-      tracking_number: tracking_number.trim(),
+      tracking_number: cleanTracking,
       shipping_carrier: carrier ?? "other",
       status: "shipped",
     })
@@ -78,7 +80,7 @@ export async function POST(
         html: itemShippedBuyerEmail({
           buyerName,
           listingTitle,
-          trackingNumber: tracking_number.trim(),
+          trackingNumber: cleanTracking,
           carrier: carrier ?? "other",
           orderId: id,
         }),
@@ -89,7 +91,7 @@ export async function POST(
       user_id: (order as any).buyer_id,
       type: "item_shipped",
       title: "Your item has been shipped!",
-      body: `${listingTitle} is on its way — tracking: ${tracking_number.trim()}`,
+      body: `${listingTitle} is on its way — tracking: ${cleanTracking}`,
       link: `/orders/${id}`,
     });
   } catch (err) {
@@ -99,7 +101,7 @@ export async function POST(
   // Create 17track tracking record (non-blocking — save tracking number as ID if created)
   try {
     const result = await create17TrackTracking({
-      trackingNumber: tracking_number.trim(),
+      trackingNumber: cleanTracking,
       carrier: carrier ?? "other",
       orderId: id,
     });
