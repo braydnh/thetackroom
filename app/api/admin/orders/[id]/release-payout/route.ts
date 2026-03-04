@@ -79,11 +79,18 @@ export async function POST(
     return NextResponse.json({ error: "No charge ID found — cannot create transfer" }, { status: 400 });
   }
 
+  const payoutAmt = (order as any).seller_payout_amt as number;
+  if (!payoutAmt || payoutAmt < 1) {
+    return NextResponse.json({
+      error: `seller_payout_amt is ${payoutAmt ?? "null"} cents — update it in Supabase before releasing payout`,
+    }, { status: 400 });
+  }
+
   // Create Stripe Transfer
   let transfer: Stripe.Transfer;
   try {
     transfer = await stripe.transfers.create({
-      amount: (order as any).seller_payout_amt,
+      amount: payoutAmt,
       currency: "aud",
       destination: sellerProfile.stripe_account_id,
       source_transaction: chargeId,
