@@ -3,6 +3,7 @@ import { formatAUD } from "@/lib/utils/currency";
 import Link from "next/link";
 import { DisputeActionButton } from "./DisputeActionButton";
 import { SyncPaymentButton } from "./SyncPaymentButton";
+import { ReleasePayoutButton } from "./ReleasePayoutButton";
 
 const STATUS_COLOR: Record<string, string> = {
   pending_payment:   "bg-muted text-muted-foreground",
@@ -31,7 +32,7 @@ export default async function AdminOrdersPage({
 
   let query = admin
     .from("orders")
-    .select("id, status, subtotal, shipping_amount, pickup_method, created_at, buyer_id, seller_id, listing_id, stripe_payment_intent_id")
+    .select("id, status, subtotal, shipping_amount, pickup_method, created_at, buyer_id, seller_id, listing_id, stripe_payment_intent_id, stripe_transfer_id")
     .order("created_at", { ascending: false })
     .range(offset, offset + pageSize - 1);
 
@@ -90,6 +91,9 @@ export default async function AdminOrdersPage({
                 )}
                 {order.status === "disputed" && (
                   <DisputeActionButton orderId={order.id} paymentIntentId={order.stripe_payment_intent_id} />
+                )}
+                {order.status === "completed" && !order.stripe_transfer_id && (
+                  <ReleasePayoutButton orderId={order.id} />
                 )}
                 <Link
                   href={`/orders/${order.id}`}
