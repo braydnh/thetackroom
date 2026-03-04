@@ -49,7 +49,7 @@ export async function create17TrackTracking({
     body: JSON.stringify([
       {
         number: trackingNumber,
-        carrier: to17TrackCode(carrier),
+        carrier: 0, // auto-detect — specific codes cause misidentification for some AusPost formats
         extra: {
           order_no: orderId,
         },
