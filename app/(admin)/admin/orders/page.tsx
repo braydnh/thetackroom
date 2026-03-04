@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { formatAUD } from "@/lib/utils/currency";
 import Link from "next/link";
 import { DisputeActionButton } from "./DisputeActionButton";
+import { SyncPaymentButton } from "./SyncPaymentButton";
 
 const STATUS_COLOR: Record<string, string> = {
   pending_payment:   "bg-muted text-muted-foreground",
@@ -40,7 +41,7 @@ export default async function AdminOrdersPage({
 
   const { data: orders } = await (query as any);
 
-  const STATUSES = ["all", "disputed", "awaiting_shipment", "shipped", "dispute_window", "completed", "refunded"];
+  const STATUSES = ["all", "pending_payment", "disputed", "awaiting_shipment", "shipped", "dispute_window", "completed", "refunded"];
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
@@ -84,6 +85,9 @@ export default async function AdminOrdersPage({
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
+                {order.status === "pending_payment" && order.stripe_payment_intent_id && (
+                  <SyncPaymentButton orderId={order.id} />
+                )}
                 {order.status === "disputed" && (
                   <DisputeActionButton orderId={order.id} paymentIntentId={order.stripe_payment_intent_id} />
                 )}
