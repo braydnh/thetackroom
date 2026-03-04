@@ -49,7 +49,7 @@ export async function create17TrackTracking({
     body: JSON.stringify([
       {
         number: trackingNumber,
-        carrier: 0, // always auto-detect — carrier dropdown is display-only
+        carrier: to17TrackCode(carrier),
         extra: {
           order_no: orderId,
         },
