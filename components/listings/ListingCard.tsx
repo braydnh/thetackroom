@@ -85,13 +85,20 @@ export function ListingCard({
     )}>
       {/* Image */}
       <Link href={`/listings/${listing.id}`} className="relative block aspect-square overflow-hidden bg-muted">
-        {currentImage ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={currentImage}
-            alt={listing.title}
-            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
+        {allImages.length > 0 ? (
+          // Render all images and toggle visibility — avoids network lag on arrow click
+          allImages.map((src, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={src}
+              src={src}
+              alt={listing.title}
+              className={cn(
+                "absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300",
+                i === activeIdx ? "opacity-100" : "opacity-0"
+              )}
+            />
+          ))
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-stone-100">
             <span className="text-4xl opacity-30">🐴</span>
