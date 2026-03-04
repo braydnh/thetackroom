@@ -1,10 +1,12 @@
 /**
  * POST /api/messages/conversations
  *
- * Creates or retrieves an existing conversation between the current user (buyer)
- * and a seller, optionally linked to a listing.
+ * Creates or retrieves an existing conversation between a buyer and seller,
+ * optionally linked to a listing.
  *
- * Body: { seller_id: string; listing_id?: string }
+ * Caller can be the buyer (pass seller_id) or the seller (pass buyer_id).
+ *
+ * Body: { seller_id?: string; buyer_id?: string; listing_id?: string }
  * Returns: { conversation_id: string }
  */
 
@@ -17,19 +19,32 @@ export async function POST(req: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { seller_id, listing_id } = await req.json() as { seller_id: string; listing_id?: string };
+  const { seller_id, buyer_id, listing_id } = await req.json() as {
+    seller_id?: string;
+    buyer_id?: string;
+    listing_id?: string;
+  };
 
-  if (!seller_id) return NextResponse.json({ error: "seller_id required" }, { status: 400 });
-  if (seller_id === user.id) return NextResponse.json({ error: "Cannot message yourself" }, { status: 400 });
+  // Caller can be the buyer (passes seller_id) or the seller (passes buyer_id)
+  const isSeller = !!buyer_id && !seller_id;
+  const resolvedBuyerId = isSeller ? buyer_id! : user.id;
+  const resolvedSellerId = isSeller ? user.id : seller_id!;
+
+  if (!resolvedSellerId || !resolvedBuyerId) {
+    return NextResponse.json({ error: "seller_id or buyer_id required" }, { status: 400 });
+  }
+  if (resolvedSellerId === resolvedBuyerId) {
+    return NextResponse.json({ error: "Cannot message yourself" }, { status: 400 });
+  }
 
   const admin = createAdminClient();
 
-  // Check for existing conversation between these parties for this listing
+  // Check for existing conversation between these parties
   let existingQuery = admin
     .from("conversations")
     .select("id")
-    .eq("buyer_id", user.id)
-    .eq("seller_id", seller_id);
+    .eq("buyer_id", resolvedBuyerId)
+    .eq("seller_id", resolvedSellerId);
 
   if (listing_id) {
     existingQuery = existingQuery.eq("listing_id", listing_id) as any;
@@ -45,8 +60,8 @@ export async function POST(req: Request) {
   const { data: conversation, error } = await admin
     .from("conversations")
     .insert({
-      buyer_id: user.id,
-      seller_id,
+      buyer_id: resolvedBuyerId,
+      seller_id: resolvedSellerId,
       listing_id: listing_id ?? null,
     })
     .select("id")

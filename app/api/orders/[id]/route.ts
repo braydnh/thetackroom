@@ -98,6 +98,7 @@ export async function GET(
       condition: raw?.condition ?? "",
       brand: raw?.brand ?? null,
     },
+    other_party_id: otherPartyId,
     other_party_username: otherProfile?.username ?? "user",
     has_reviewed: !!existingReview,
   });

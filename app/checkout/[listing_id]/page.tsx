@@ -229,16 +229,20 @@ function PaymentForm({ orderId, total }: { orderId: string; total: number }) {
     if (!stripe || !elements) return;
     setPaying(true);
 
-    const { error } = await stripe.confirmPayment({
+    const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       confirmParams: {
         return_url: `${window.location.origin}/orders/${orderId}?confirmed=true`,
       },
+      redirect: "if_required",
     });
 
     if (error) {
       toast.error(error.message ?? "Payment failed. Please try again.");
       setPaying(false);
+    } else if (paymentIntent?.status === "succeeded") {
+      // Payment confirmed without redirect (e.g. saved card, no 3DS)
+      router.push(`/orders/${orderId}?confirmed=true`);
     }
   }
 

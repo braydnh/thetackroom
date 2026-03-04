@@ -16,6 +16,7 @@ import {
   MapPin,
   Clock,
   AlertCircle,
+  MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ interface OrderDetail {
     condition: string;
     brand: string | null;
   };
+  other_party_id: string;
   other_party_username: string;
   has_reviewed: boolean;
 }
@@ -116,6 +118,7 @@ export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const confirmed = searchParams.get("confirmed") === "true";
+  const router = useRouter();
 
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -130,6 +133,7 @@ export default function OrderDetailPage() {
   const [disputeReason, setDisputeReason] = useState("");
   const [submittingDispute, setSubmittingDispute] = useState(false);
   const [disputeSubmitted, setDisputeSubmitted] = useState(false);
+  const [contactingOtherParty, setContactingOtherParty] = useState(false);
 
   useEffect(() => {
     fetch(`/api/orders/${id}`)
@@ -248,6 +252,31 @@ export default function OrderDetailPage() {
     setSubmittingReview(false);
   }
 
+  async function handleContact() {
+    if (!order) return;
+    setContactingOtherParty(true);
+    try {
+      const body = order.is_seller
+        ? { buyer_id: order.other_party_id, listing_id: order.listing.id }
+        : { seller_id: order.other_party_id, listing_id: order.listing.id };
+      const res = await fetch("/api/messages/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (res.ok && data.conversation_id) {
+        router.push(`/messages/${data.conversation_id}`);
+      } else {
+        toast.error("Could not open conversation. Please try again.");
+      }
+    } catch {
+      toast.error("Could not open conversation. Please try again.");
+    } finally {
+      setContactingOtherParty(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 flex items-center justify-center">
@@ -359,6 +388,41 @@ export default function OrderDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Local pickup: contact + safety tips */}
+      {order.pickup_method === "local_pickup" && order.status === "payment_captured" && (
+        <div className="rounded-xl border border-olive/30 bg-olive/5 p-5 mb-6 space-y-4">
+          <div className="flex items-start gap-3">
+            <MapPin className="h-4 w-4 text-olive mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-navy">Arrange local pickup</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Message {order.is_seller ? `@${order.other_party_username} (buyer)` : `@${order.other_party_username} (seller)`} to agree on a time and place.
+              </p>
+            </div>
+          </div>
+          <Button
+            className="w-full bg-olive hover:bg-olive-light text-cream"
+            onClick={handleContact}
+            disabled={contactingOtherParty}
+          >
+            {contactingOtherParty ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Opening chat…</>
+            ) : (
+              <><MessageCircle className="mr-2 h-4 w-4" /> Message @{order.other_party_username}</>
+            )}
+          </Button>
+          <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 space-y-1">
+            <p className="text-xs font-semibold text-amber-900">Safety tips for meetups</p>
+            <ul className="text-xs text-amber-800 space-y-0.5 list-disc list-inside">
+              <li>Meet in a public place (e.g. shopping centre, police station)</li>
+              <li>Bring a friend or let someone know where you&apos;re going</li>
+              <li>Inspect the item thoroughly before the seller marks it as picked up</li>
+              <li>Never share personal financial information</li>
+            </ul>
+          </div>
+        </div>
+      )}
 
       {/* Price breakdown */}
       <div className="rounded-xl bg-stone-50 border border-border p-4 mb-6 space-y-2">
