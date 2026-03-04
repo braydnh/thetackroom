@@ -80,14 +80,23 @@ export async function POST(
   }
 
   // Create Stripe Transfer
-  const transfer = await stripe.transfers.create({
-    amount: (order as any).seller_payout_amt,
-    currency: "aud",
-    destination: sellerProfile.stripe_account_id,
-    source_transaction: chargeId,
-    metadata: { order_id: orderId, type: "admin_manual_payout" },
-    description: `Manual payout for order ${orderId}`,
-  });
+  let transfer: Stripe.Transfer;
+  try {
+    transfer = await stripe.transfers.create({
+      amount: (order as any).seller_payout_amt,
+      currency: "aud",
+      destination: sellerProfile.stripe_account_id,
+      source_transaction: chargeId,
+      metadata: { order_id: orderId, type: "admin_manual_payout" },
+      description: `Manual payout for order ${orderId}`,
+    });
+  } catch (err: any) {
+    console.error("release-payout: Stripe transfer failed:", err);
+    return NextResponse.json(
+      { error: err?.message ?? "Stripe transfer failed" },
+      { status: 500 }
+    );
+  }
 
   // Update order + mark listing sold + increment sales count
   await Promise.all([

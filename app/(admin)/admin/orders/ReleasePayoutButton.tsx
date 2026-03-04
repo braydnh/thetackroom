@@ -13,16 +13,22 @@ export function ReleasePayoutButton({ orderId }: { orderId: string }) {
 
   async function handle() {
     setLoading(true);
-    const res = await fetch(`/api/admin/orders/${orderId}/release-payout`, { method: "POST" });
-    const data = await res.json();
-    if (!res.ok) {
-      toast.error(data.error ?? "Payout failed");
-    } else {
-      toast.success("Payout released and seller notified");
-      setDone(true);
-      router.refresh();
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}/release-payout`, { method: "POST" });
+      let data: any = {};
+      try { data = await res.json(); } catch {}
+      if (!res.ok) {
+        toast.error(data.error ?? `Payout failed (${res.status})`);
+      } else {
+        toast.success("Payout released and seller notified");
+        setDone(true);
+        router.refresh();
+      }
+    } catch (err: any) {
+      toast.error(err.message ?? "Network error — please try again");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   if (done) return <span className="text-xs text-emerald-600">Paid out</span>;
