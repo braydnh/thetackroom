@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ const AU_STATES = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"];
 
 function SignupForm() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const isFoundingSeller = searchParams.get("founding") === "true";
 
   const [step, setStep] = useState<1 | 2>(1);
@@ -39,7 +40,6 @@ function SignupForm() {
 
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [done, setDone] = useState(false);
 
   // ── Password strength ──
   const passwordStrength = (() => {
@@ -157,10 +157,10 @@ function SignupForm() {
 
     if (error) {
       toast.error(error.message);
+      setLoading(false);
     } else {
-      setDone(true);
+      router.push(searchParams.get("next") ?? "/selling");
     }
-    setLoading(false);
   }
 
   async function handleGoogleSignup() {
@@ -174,31 +174,6 @@ function SignupForm() {
       toast.error(error.message);
       setGoogleLoading(false);
     }
-  }
-
-  // ── Success state ──
-  if (done) {
-    return (
-      <div className="rounded-2xl bg-white p-8 shadow-xl text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-olive/10">
-          <span className="text-2xl">✉️</span>
-        </div>
-        <h2
-          className="text-xl font-bold text-navy mb-2"
-          style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
-        >
-          Check your email
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          We&apos;ve sent a confirmation link to <strong>{email}</strong>.
-          Click it to activate your account.
-        </p>
-        <p className="mt-4 text-xs text-muted-foreground">
-          Already confirmed?{" "}
-          <Link href="/login" className="text-olive hover:underline">Sign in</Link>
-        </p>
-      </div>
-    );
   }
 
   return (
