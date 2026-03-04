@@ -159,6 +159,8 @@ function SignupForm() {
       toast.error(error.message);
       setLoading(false);
     } else {
+      // Send welcome email (non-blocking)
+      fetch("/api/auth/send-welcome", { method: "POST" }).catch(() => {});
       router.push(searchParams.get("next") ?? "/selling");
     }
   }
