@@ -64,7 +64,7 @@ export default function NewListingForm() {
     setForm((f) => ({ ...f, [key]: value }));
 
   const priceCents = Math.round(parseFloat(form.price || "0") * 100);
-  const shippingCents = Math.round(parseFloat(form.shippingPrice || "0") * 100);
+  const shippingCents = form.allowsShipping ? Math.round(parseFloat(form.shippingPrice || "0") * 100) : 0;
   const { commission, sellerPayout } = calculateSellerPayout(priceCents, shippingCents, 5);
 
   const canProceedToDelivery =
@@ -642,6 +642,10 @@ export default function NewListingForm() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Listing price</span>
                   <span>{formatAUD(priceCents)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Shipping cost</span>
+                  <span>{form.allowsShipping ? `+${formatAUD(shippingCents)}` : "—"}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Platform fee (5%)</span>
