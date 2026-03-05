@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { Menu, X, Search, Heart, MessageCircle, User, ChevronDown, ChevronRight, Plus, Bell, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -309,6 +311,37 @@ function ShopMegaMenu() {
 
 export function Navbar({ user, unreadMessages = 0, unreadNotifications = 0 }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
+  const [liveUnread, setLiveUnread] = useState(unreadMessages);
+
+  // Sync when server re-renders layout with a new count
+  useEffect(() => { setLiveUnread(unreadMessages); }, [unreadMessages]);
+
+  // Clear badge when user is viewing messages
+  useEffect(() => {
+    if (pathname.startsWith("/messages")) setLiveUnread(0);
+  }, [pathname]);
+
+  // Real-time: bump badge when a new message arrives from someone else
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    let channel: ReturnType<typeof supabase.channel> | undefined;
+
+    supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+      if (!authUser) return;
+      channel = supabase
+        .channel("navbar-unread-messages")
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload: any) => {
+          if (payload.new.sender_id !== authUser.id) {
+            setLiveUnread((c) => c + 1);
+          }
+        })
+        .subscribe();
+    });
+
+    return () => { if (channel) supabase.removeChannel(channel); };
+  }, [user]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-white">
@@ -460,7 +493,7 @@ export function Navbar({ user, unreadMessages = 0, unreadNotifications = 0 }: Na
               <Button variant="ghost" size="icon" asChild className="relative">
                 <Link href="/messages">
                   <MessageCircle className="h-5 w-5" />
-                  {unreadMessages > 0 && (
+                  {liveUnread > 0 && (
                     <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 border border-white" />
                   )}
                   <span className="sr-only">Messages</span>

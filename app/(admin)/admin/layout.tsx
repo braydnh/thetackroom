@@ -19,17 +19,29 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("username, avatar_url, role")
-    .eq("id", user.id)
-    .single();
+  const [{ data: profile }, { data: convos }, { count: notifCount }] = await Promise.all([
+    supabase.from("profiles").select("username, avatar_url, role").eq("id", user.id).single(),
+    supabase.from("conversations").select("id").or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`),
+    supabase.from("notifications").select("*", { count: "exact", head: true }).eq("user_id", user.id).is("read_at", null),
+  ]);
 
   if (!profile || (profile as any).role !== "admin") redirect("/");
 
+  let unreadMessages = 0;
+  const convoIds = (convos ?? []).map((c: any) => c.id);
+  if (convoIds.length > 0) {
+    const { count } = await supabase
+      .from("messages")
+      .select("*", { count: "exact", head: true })
+      .in("conversation_id", convoIds)
+      .neq("sender_id", user.id)
+      .is("read_at", null);
+    unreadMessages = count ?? 0;
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
-      <Navbar user={profile} />
+      <Navbar user={profile} unreadMessages={unreadMessages} unreadNotifications={notifCount ?? 0} />
       <div className="flex flex-1 min-w-0">
         {/* Sidebar — desktop only */}
         <aside className="w-56 flex-shrink-0 border-r border-border bg-white hidden md:block">
