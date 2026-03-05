@@ -151,6 +151,9 @@ export default async function ListingsPage({
           <Suspense fallback={<ListingGrid listings={[]} loading />}>
             <ListingsContent params={params} excludeIds={featuredIds} />
           </Suspense>
+          <Suspense fallback={null}>
+            <PaginationRow params={params} excludeIds={featuredIds} />
+          </Suspense>
         </div>
       </div>
       </div>
@@ -168,9 +171,9 @@ function MobileFilterButton() {
   );
 }
 
-async function ListingsContent({ params, excludeIds = [] }: { params: SearchParams; excludeIds?: string[] }) {
-  const supabase = await createClient();
+const PAGE_SIZE = 24;
 
+function buildQuery(supabase: any, params: SearchParams, excludeIds: string[]) {
   let query = supabase
     .from("listings")
     .select(
@@ -180,12 +183,10 @@ async function ListingsContent({ params, excludeIds = [] }: { params: SearchPara
     )
     .eq("status", "active");
 
-  // Exclude featured listings already shown above
   if (excludeIds.length > 0) {
     query = query.not("id", "in", `(${excludeIds.join(",")})`);
   }
 
-  // Filters
   if (params.category) {
     query = query.eq("category", params.category as ListingCategory);
   }
@@ -214,7 +215,6 @@ async function ListingsContent({ params, excludeIds = [] }: { params: SearchPara
     query = query.textSearch("search_vector", params.q, { type: "websearch" });
   }
 
-  // Sort
   if (params.sort === "price_asc") {
     query = query.order("price", { ascending: true });
   } else if (params.sort === "price_desc") {
@@ -223,9 +223,35 @@ async function ListingsContent({ params, excludeIds = [] }: { params: SearchPara
     query = query.order("created_at", { ascending: false });
   }
 
-  query = query.limit(24);
+  return query;
+}
 
-  const { data: rows } = await query;
+function buildPageUrl(params: SearchParams, page: number): string {
+  const p = new URLSearchParams();
+  if (params.q) p.set("q", params.q);
+  if (params.category) p.set("category", params.category);
+  if (params.sub) {
+    const subs = Array.isArray(params.sub) ? params.sub : [params.sub];
+    subs.forEach((s) => p.append("sub", s));
+  }
+  if (params.condition) {
+    const conds = Array.isArray(params.condition) ? params.condition : [params.condition];
+    conds.forEach((c) => p.append("condition", c));
+  }
+  if (params.min) p.set("min", params.min);
+  if (params.max) p.set("max", params.max);
+  if (params.sort) p.set("sort", params.sort);
+  if (page > 1) p.set("page", String(page));
+  const qs = p.toString();
+  return `/listings${qs ? `?${qs}` : ""}`;
+}
+
+async function ListingsContent({ params, excludeIds = [] }: { params: SearchParams; excludeIds?: string[] }) {
+  const supabase = await createClient();
+  const page = Math.max(1, parseInt(params.page ?? "1", 10));
+  const offset = (page - 1) * PAGE_SIZE;
+
+  const { data: rows } = await buildQuery(supabase, params, excludeIds).range(offset, offset + PAGE_SIZE - 1);
 
   const listings: ListingCardData[] = (rows ?? []).map((r: any) => {
     const images: { display_url: string; is_primary: boolean; sort_order: number }[] =
@@ -260,5 +286,40 @@ async function ListingsContent({ params, excludeIds = [] }: { params: SearchPara
           : "No listings yet — be the first to list your gear!"
       }
     />
+  );
+}
+
+async function PaginationRow({ params, excludeIds = [] }: { params: SearchParams; excludeIds?: string[] }) {
+  const supabase = await createClient();
+  const page = Math.max(1, parseInt(params.page ?? "1", 10));
+  const offset = (page - 1) * PAGE_SIZE;
+
+  // Fetch one extra to detect if there's a next page
+  const { data: rows } = await buildQuery(supabase, params, excludeIds).range(offset, offset + PAGE_SIZE);
+  const hasNext = (rows ?? []).length > PAGE_SIZE;
+  const hasPrev = page > 1;
+
+  if (!hasNext && !hasPrev) return null;
+
+  return (
+    <div className="flex items-center justify-between mt-10 gap-4">
+      {hasPrev ? (
+        <Link
+          href={buildPageUrl(params, page - 1)}
+          className="rounded-full border border-border px-5 py-2 text-sm font-medium text-navy hover:bg-olive hover:text-cream hover:border-olive transition-colors"
+        >
+          ← Previous
+        </Link>
+      ) : <div />}
+      <span className="text-sm text-muted-foreground">Page {page}</span>
+      {hasNext ? (
+        <Link
+          href={buildPageUrl(params, page + 1)}
+          className="rounded-full border border-border px-5 py-2 text-sm font-medium text-navy hover:bg-olive hover:text-cream hover:border-olive transition-colors"
+        >
+          Next →
+        </Link>
+      ) : <div />}
+    </div>
   );
 }
