@@ -213,7 +213,7 @@ export default function MessageThreadPage() {
       if (data.code === "CONTACT_INFO_DETECTED") {
         toast.error(data.error ?? "Contact details are not permitted in messages.");
       } else {
-        toast.error("Failed to send message. Please try again.");
+        toast.error(data.error ?? `Failed to send message (${res.status}). Please try again.`);
       }
     } else {
       // Swap the temp ID for the real DB ID so the Realtime dedup works correctly
