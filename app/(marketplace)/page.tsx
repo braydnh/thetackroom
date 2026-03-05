@@ -90,7 +90,7 @@ async function getAmbassadorListings(): Promise<AmbassadorListing[]> {
     .select(`
       id, title, price,
       listing_images(display_url, is_primary, sort_order),
-      profiles!seller_id(username, avatar_url, is_ambassador)
+      profiles!seller_id!inner(username, avatar_url, is_ambassador)
     `)
     .eq("status", "active")
     .eq("profiles.is_ambassador", true)
