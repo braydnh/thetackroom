@@ -65,7 +65,7 @@ export default function NewListingForm() {
 
   const priceCents = Math.round(parseFloat(form.price || "0") * 100);
   const shippingCents = form.allowsShipping ? Math.round(parseFloat(form.shippingPrice || "0") * 100) : 0;
-  const { commission, sellerPayout } = calculateSellerPayout(priceCents, shippingCents, 5);
+  const { commission, stripeFee, sellerPayout } = calculateSellerPayout(priceCents, shippingCents, 5);
 
   const canProceedToDelivery =
     images.length > 0 &&
@@ -650,6 +650,10 @@ export default function NewListingForm() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Platform fee (5%)</span>
                   <span>-{formatAUD(commission)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Payment processing fee</span>
+                  <span>-{formatAUD(stripeFee)}</span>
                 </div>
                 <div className="flex justify-between text-sm font-semibold text-navy border-t border-border pt-1 mt-1">
                   <span>You receive (approx.)</span>
