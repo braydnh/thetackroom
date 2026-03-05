@@ -171,7 +171,7 @@ function MobileFilterButton() {
   );
 }
 
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 48;
 
 function buildQuery(supabase: any, params: SearchParams, excludeIds: string[]) {
   let query = supabase
