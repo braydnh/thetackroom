@@ -652,7 +652,7 @@ export default function NewListingForm() {
                   <span>-{formatAUD(commission)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Payment processing fee</span>
+                  <span className="text-muted-foreground">Stripe processing fee (1.7% + $0.30)</span>
                   <span>-{formatAUD(stripeFee)}</span>
                 </div>
                 <div className="flex justify-between text-sm font-semibold text-navy border-t border-border pt-1 mt-1">
