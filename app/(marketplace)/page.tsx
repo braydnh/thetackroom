@@ -35,8 +35,7 @@ async function NewestListings() {
   const { data: rows } = await supabase
     .from("listings")
     .select(
-      `id, title, price, condition, brand, size, allows_pickup,
-       listing_images(display_url, is_primary, sort_order),
+      `id, title, price, condition, brand, size, allows_pickup, primary_image_url,
        profiles!seller_id(username, avatar_url, is_founding_seller, is_ambassador)`
     )
     .eq("status", "active")
@@ -44,11 +43,6 @@ async function NewestListings() {
     .limit(10);
 
   const listings: ListingCardData[] = (rows ?? []).map((r: any) => {
-    const images: { display_url: string; is_primary: boolean; sort_order: number }[] =
-      r.listing_images ?? [];
-    const sorted = [...images].sort((a, b) => a.sort_order - b.sort_order);
-    const primary =
-      images.find((i) => i.is_primary)?.display_url ?? sorted[0]?.display_url ?? null;
     const seller = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
     return {
       id: r.id,
@@ -58,8 +52,7 @@ async function NewestListings() {
       brand: r.brand,
       size: r.size,
       allows_pickup: r.allows_pickup,
-      primary_image: primary,
-      images: sorted.map((i) => i.display_url),
+      primary_image: r.primary_image_url ?? null,
       seller_username: seller?.username ?? "unknown",
       seller_avatar: seller?.avatar_url ?? null,
       seller_is_founding: seller?.is_founding_seller ?? false,
@@ -88,8 +81,7 @@ async function getAmbassadorListings(): Promise<AmbassadorListing[]> {
   const { data: rows } = await supabase
     .from("listings")
     .select(`
-      id, title, price,
-      listing_images(display_url, is_primary, sort_order),
+      id, title, price, primary_image_url,
       profiles!seller_id!inner(username, avatar_url, is_ambassador)
     `)
     .eq("status", "active")
@@ -104,15 +96,11 @@ async function getAmbassadorListings(): Promise<AmbassadorListing[]> {
     })
     .map((r: any) => {
       const seller = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
-      const images: { display_url: string; is_primary: boolean; sort_order: number }[] =
-        r.listing_images ?? [];
-      const sorted = [...images].sort((a, b) => a.sort_order - b.sort_order);
-      const image = images.find((i) => i.is_primary)?.display_url ?? sorted[0]?.display_url ?? null;
       return {
         id: r.id,
         title: r.title,
         price: r.price,
-        image,
+        image: r.primary_image_url ?? null,
         seller_username: seller?.username ?? "unknown",
         seller_avatar: seller?.avatar_url ?? null,
       };

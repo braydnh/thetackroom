@@ -36,14 +36,14 @@ export default async function SellerProfilePage({ params }: { params: Promise<{ 
   const [{ data: listings }, { data: soldListings }, { data: reviews }] = await Promise.all([
     admin
       .from("listings")
-      .select("id, title, price, condition, brand, listing_images(display_url, is_primary, sort_order)")
+      .select("id, title, price, condition, brand, primary_image_url")
       .eq("seller_id", profile.id)
       .eq("status", "active")
       .order("created_at", { ascending: false })
       .limit(12),
     admin
       .from("listings")
-      .select("id, title, price, condition, brand, listing_images(display_url, is_primary, sort_order)")
+      .select("id, title, price, condition, brand, primary_image_url")
       .eq("seller_id", profile.id)
       .eq("status", "sold")
       .order("created_at", { ascending: false })
@@ -146,10 +146,7 @@ export default async function SellerProfilePage({ params }: { params: Promise<{ 
             Active Listings ({(listings ?? []).length})
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {(listings as any[]).map((listing) => {
-              const sorted = (listing.listing_images ?? []).sort((a: any, b: any) => a.sort_order - b.sort_order);
-              const primaryImage = sorted.find((i: any) => i.is_primary)?.display_url ?? sorted[0]?.display_url ?? null;
-              return (
+            {(listings as any[]).map((listing) => (
                 <ListingCard
                   key={listing.id}
                   listing={{
@@ -158,14 +155,12 @@ export default async function SellerProfilePage({ params }: { params: Promise<{ 
                     price: listing.price,
                     condition: listing.condition,
                     brand: listing.brand,
-                    primary_image: primaryImage,
-                    images: sorted.map((i: any) => i.display_url),
+                    primary_image: listing.primary_image_url ?? null,
                     seller_username: (profile as any).username,
                     allows_pickup: false,
                   }}
                 />
-              );
-            })}
+            ))}
           </div>
         </section>
       )}
@@ -179,8 +174,7 @@ export default async function SellerProfilePage({ params }: { params: Promise<{ 
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {(soldListings as any[]).map((listing) => {
-              const sorted = (listing.listing_images ?? []).sort((a: any, b: any) => a.sort_order - b.sort_order);
-              const primaryImage = sorted.find((i: any) => i.is_primary)?.display_url ?? sorted[0]?.display_url ?? null;
+              const primaryImage = listing.primary_image_url ?? null;
               return (
                 <div key={listing.id} className="rounded-xl border border-border overflow-hidden opacity-60">
                   <div className="relative aspect-square bg-muted">

@@ -32,7 +32,7 @@ export default async function SellerDashboardPage() {
       .single(),
     supabase
       .from("listings")
-      .select("id, title, price, status, view_count, favourite_count, created_at, listing_images(display_url, is_primary, sort_order)")
+      .select("id, title, price, status, view_count, favourite_count, created_at, primary_image_url")
       .eq("seller_id", user.id)
       .neq("status", "deleted")
       .order("created_at", { ascending: false })
@@ -149,10 +149,7 @@ export default async function SellerDashboardPage() {
         ) : (
           <div className="divide-y divide-border">
             {(listings as any[]).map((listing) => {
-              const images = (listing.listing_images ?? []) as { display_url: string; is_primary: boolean; sort_order: number }[];
-              const thumb = images.find((i) => i.is_primary)?.display_url
-                ?? images.sort((a, b) => a.sort_order - b.sort_order)[0]?.display_url
-                ?? null;
+              const thumb = listing.primary_image_url ?? null;
               const meta = STATUS_META[listing.status] ?? STATUS_META.draft;
 
               return (

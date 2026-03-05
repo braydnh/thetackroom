@@ -40,7 +40,7 @@ export default async function FavouritesPage() {
 
   const { data: listings } = await admin
     .from("listings")
-    .select("id, title, price, condition, brand, allows_pickup, listing_images(display_url, is_primary, sort_order), profiles!seller_id(username, location)")
+    .select("id, title, price, condition, brand, allows_pickup, primary_image_url, profiles!seller_id(username, location)")
     .in("id", listingIds)
     .in("status", ["active", "reserved"]);
 
@@ -52,10 +52,7 @@ export default async function FavouritesPage() {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {(listings as any[] ?? []).map((listing) => {
-          const images = (listing.listing_images ?? []).sort((a: any, b: any) => a.sort_order - b.sort_order);
-          const primaryImage = images.find((i: any) => i.is_primary)?.display_url ?? images[0]?.display_url ?? null;
           const profile = Array.isArray(listing.profiles) ? listing.profiles[0] : listing.profiles;
-
           return (
             <ListingCard
               key={listing.id}
@@ -66,7 +63,7 @@ export default async function FavouritesPage() {
                 condition: listing.condition,
                 brand: listing.brand,
                 allows_pickup: listing.allows_pickup,
-                primary_image: primaryImage,
+                primary_image: listing.primary_image_url ?? null,
                 seller_username: profile?.username ?? "seller",
               }}
             />

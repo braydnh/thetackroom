@@ -173,57 +173,40 @@ function MobileFilterButton() {
 
 const PAGE_SIZE = 48;
 
-function buildQuery(supabase: any, params: SearchParams, excludeIds: string[]) {
-  let query = supabase
-    .from("listings")
-    .select(
-      `id, title, price, condition, brand, size, allows_pickup,
-       listing_images(display_url, is_primary, sort_order),
-       profiles!seller_id(username, avatar_url, is_founding_seller, is_ambassador)`
-    )
-    .eq("status", "active");
+function applyFilters(query: any, params: SearchParams, excludeIds: string[]) {
+  if (excludeIds.length > 0) query = query.not("id", "in", `(${excludeIds.join(",")})`);
+  if (params.category) query = query.eq("category", params.category as ListingCategory);
 
-  if (excludeIds.length > 0) {
-    query = query.not("id", "in", `(${excludeIds.join(",")})`);
-  }
-
-  if (params.category) {
-    query = query.eq("category", params.category as ListingCategory);
-  }
-
-  const rawSubs = params.sub
-    ? Array.isArray(params.sub) ? params.sub : [params.sub]
-    : [];
+  const rawSubs = params.sub ? (Array.isArray(params.sub) ? params.sub : [params.sub]) : [];
   const subs = rawSubs.length > 0 ? expandSubValues(rawSubs) : [];
-  if (subs.length === 1) {
-    query = query.eq("subcategory", subs[0]);
-  } else if (subs.length > 1) {
-    query = query.in("subcategory", subs);
-  }
+  if (subs.length === 1) query = query.eq("subcategory", subs[0]);
+  else if (subs.length > 1) query = query.in("subcategory", subs);
 
-  const conditions = params.condition
-    ? Array.isArray(params.condition) ? params.condition : [params.condition]
-    : [];
-  if (conditions.length > 0) {
-    query = query.in("condition", conditions as ListingCondition[]);
-  }
+  const conditions = params.condition ? (Array.isArray(params.condition) ? params.condition : [params.condition]) : [];
+  if (conditions.length > 0) query = query.in("condition", conditions as ListingCondition[]);
 
   if (params.min) query = query.gte("price", Math.round(parseFloat(params.min) * 100));
   if (params.max) query = query.lte("price", Math.round(parseFloat(params.max) * 100));
-
-  if (params.q) {
-    query = query.textSearch("search_vector", params.q, { type: "websearch" });
-  }
-
-  if (params.sort === "price_asc") {
-    query = query.order("price", { ascending: true });
-  } else if (params.sort === "price_desc") {
-    query = query.order("price", { ascending: false });
-  } else {
-    query = query.order("created_at", { ascending: false });
-  }
+  if (params.q) query = query.textSearch("search_vector", params.q, { type: "websearch" });
 
   return query;
+}
+
+function applySort(query: any, params: SearchParams) {
+  if (params.sort === "price_asc") return query.order("price", { ascending: true });
+  if (params.sort === "price_desc") return query.order("price", { ascending: false });
+  return query.order("created_at", { ascending: false });
+}
+
+function buildQuery(supabase: any, params: SearchParams, excludeIds: string[]) {
+  const query = supabase
+    .from("listings")
+    .select(
+      `id, title, price, condition, brand, size, allows_pickup, primary_image_url,
+       profiles!seller_id(username, avatar_url, is_founding_seller, is_ambassador)`
+    )
+    .eq("status", "active");
+  return applySort(applyFilters(query, params, excludeIds), params);
 }
 
 function buildPageUrl(params: SearchParams, page: number): string {
@@ -254,11 +237,6 @@ async function ListingsContent({ params, excludeIds = [] }: { params: SearchPara
   const { data: rows } = await buildQuery(supabase, params, excludeIds).range(offset, offset + PAGE_SIZE - 1);
 
   const listings: ListingCardData[] = (rows ?? []).map((r: any) => {
-    const images: { display_url: string; is_primary: boolean; sort_order: number }[] =
-      r.listing_images ?? [];
-    const sorted = [...images].sort((a, b) => a.sort_order - b.sort_order);
-    const primary =
-      images.find((i) => i.is_primary)?.display_url ?? sorted[0]?.display_url ?? null;
     const seller = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
     return {
       id: r.id,
@@ -268,8 +246,7 @@ async function ListingsContent({ params, excludeIds = [] }: { params: SearchPara
       brand: r.brand,
       size: r.size,
       allows_pickup: r.allows_pickup,
-      primary_image: primary,
-      images: sorted.map((i) => i.display_url),
+      primary_image: r.primary_image_url ?? null,
       seller_username: seller?.username ?? "unknown",
       seller_avatar: seller?.avatar_url ?? null,
       seller_is_founding: seller?.is_founding_seller ?? false,
@@ -294,9 +271,13 @@ async function PaginationRow({ params, excludeIds = [] }: { params: SearchParams
   const page = Math.max(1, parseInt(params.page ?? "1", 10));
   const offset = (page - 1) * PAGE_SIZE;
 
-  // Fetch one extra to detect if there's a next page
-  const { data: rows } = await buildQuery(supabase, params, excludeIds).range(offset, offset + PAGE_SIZE);
-  const hasNext = (rows ?? []).length > PAGE_SIZE;
+  // Lightweight check: peek at one row beyond the current page (no joins)
+  const peekQuery = applySort(
+    applyFilters(supabase.from("listings").select("id").eq("status", "active"), params, excludeIds),
+    params
+  );
+  const { data: peek } = await peekQuery.range(offset + PAGE_SIZE, offset + PAGE_SIZE).maybeSingle();
+  const hasNext = !!peek;
   const hasPrev = page > 1;
 
   if (!hasNext && !hasPrev) return null;

@@ -28,7 +28,7 @@ export default async function AdminListingsPage({
 
   const query = admin
     .from("listings")
-    .select("id, title, price, status, created_at, seller_id, listing_images(display_url, is_primary, sort_order), profiles!seller_id(username)")
+    .select("id, title, price, status, created_at, seller_id, primary_image_url, profiles!seller_id(username)")
     .order("created_at", { ascending: false })
     .range(offset, offset + pageSize - 1);
 
@@ -82,8 +82,7 @@ export default async function AdminListingsPage({
           <div className="py-12 text-center text-sm text-muted-foreground">No listings found</div>
         ) : (
           (listings as any[]).map((listing) => {
-            const images = (listing.listing_images ?? []).sort((a: any, b: any) => a.sort_order - b.sort_order);
-            const thumb = images.find((i: any) => i.is_primary)?.display_url ?? images[0]?.display_url ?? null;
+            const thumb = listing.primary_image_url ?? null;
             const seller = Array.isArray(listing.profiles) ? listing.profiles[0] : listing.profiles;
 
             return (
