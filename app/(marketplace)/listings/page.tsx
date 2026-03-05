@@ -223,7 +223,7 @@ async function ListingsContent({ params, excludeIds = [] }: { params: SearchPara
     query = query.order("created_at", { ascending: false });
   }
 
-  query = query.limit(48);
+  query = query.limit(24);
 
   const { data: rows } = await query;
 
