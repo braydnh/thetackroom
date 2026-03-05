@@ -43,12 +43,15 @@ export async function GET(
 
   if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
-  // Only buyer or seller can view
-  if (order.buyer_id !== user.id && order.seller_id !== user.id) {
+  // Admins can view any order; otherwise only buyer or seller
+  const { data: callerProfile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  const isAdmin = (callerProfile as any)?.role === "admin";
+
+  if (!isAdmin && order.buyer_id !== user.id && order.seller_id !== user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const isSeller = order.seller_id === user.id;
+  const isSeller = isAdmin ? true : order.seller_id === user.id;
   const otherPartyId = isSeller ? order.buyer_id : order.seller_id;
 
   // Fetch listing info, other party username, and whether buyer has already reviewed
