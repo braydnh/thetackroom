@@ -4,6 +4,7 @@ import Link from "next/link";
 import { DisputeActionButton } from "./DisputeActionButton";
 import { SyncPaymentButton } from "./SyncPaymentButton";
 import { ReleasePayoutButton } from "./ReleasePayoutButton";
+import { MarkDeliveredButton } from "./MarkDeliveredButton";
 
 const STATUS_COLOR: Record<string, string> = {
   pending_payment:   "bg-muted text-muted-foreground",
@@ -88,6 +89,9 @@ export default async function AdminOrdersPage({
               <div className="flex items-center gap-2 flex-shrink-0">
                 {order.status === "pending_payment" && order.stripe_payment_intent_id && (
                   <SyncPaymentButton orderId={order.id} />
+                )}
+                {order.status === "shipped" && (
+                  <MarkDeliveredButton orderId={order.id} />
                 )}
                 {order.status === "disputed" && (
                   <DisputeActionButton orderId={order.id} paymentIntentId={order.stripe_payment_intent_id} />
