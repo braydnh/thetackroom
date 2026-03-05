@@ -299,10 +299,10 @@ export default function MessageThreadPage() {
                 </div>
               )}
               <div className={cn("flex", isMe ? "justify-end" : "justify-start")}>
-                <div className="flex flex-col">
+                <div className="flex flex-col max-w-[75%]">
                   <div
                     className={cn(
-                      "max-w-[75%] rounded-2xl px-4 py-2 text-sm",
+                      "rounded-2xl px-4 py-2 text-sm",
                       isMe
                         ? "bg-olive text-cream rounded-br-sm"
                         : "bg-white border border-border text-navy rounded-bl-sm"
