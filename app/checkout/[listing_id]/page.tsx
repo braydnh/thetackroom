@@ -90,7 +90,7 @@ export default function CheckoutPage() {
     setClientSecret(data.client_secret);
     setOrderId(data.order_id);
     setCreatingIntent(false);
-  }, [listing_id]);
+  }, [listing_id, address, pickupMethod]);
 
   function handleMethodChange(method: "shipping" | "local_pickup") {
     setPickupMethod(method);
