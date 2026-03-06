@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   // Check if already favourited
   const { data: existing } = await supabase
     .from("favourites")
-    .select("id")
+    .select("user_id")
     .eq("user_id", user.id)
     .eq("listing_id", listing_id)
     .maybeSingle();
