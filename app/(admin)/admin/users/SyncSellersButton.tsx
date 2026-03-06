@@ -6,7 +6,7 @@ import { Loader2, RefreshCw } from "lucide-react";
 
 export function SyncSellersButton() {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ checked: number; fixed: { username: string; reason: string }[] } | null>(null);
+  const [result, setResult] = useState<{ checked: number; fixed: { id: string; username: string; reason: string }[] } | null>(null);
 
   async function handleSync() {
     setLoading(true);
