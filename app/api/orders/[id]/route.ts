@@ -20,7 +20,7 @@ export async function GET(
 
   const admin = createAdminClient();
 
-  const { data: order } = await admin
+  const { data: order } = await (admin
     .from("orders")
     .select(`
       id,
@@ -45,7 +45,7 @@ export async function GET(
       shipping_postcode
     `)
     .eq("id", id)
-    .single();
+    .single() as any);
 
   if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
