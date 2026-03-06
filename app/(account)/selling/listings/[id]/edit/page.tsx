@@ -15,11 +15,11 @@ export default async function EditListingPage({
 
   const admin = createAdminClient();
 
-  const { data: listing } = await admin
-    .from("listings")
-    .select("id, title, description, price, condition, category, subcategory, brand, size, status, allows_shipping, allows_pickup, shipping_price, shipping_notes, seller_id, listing_images(id, display_url, storage_path, sort_order, is_primary)")
-    .eq("id", id)
-    .single();
+  const [{ data: listing }, { data: profile }, { data: configRows }] = await Promise.all([
+    admin.from("listings").select("id, title, description, price, condition, category, subcategory, brand, size, status, allows_shipping, allows_pickup, shipping_price, shipping_notes, seller_id, listing_images(id, display_url, storage_path, sort_order, is_primary)").eq("id", id).single(),
+    supabase.from("profiles").select("role, is_ambassador").eq("id", user.id).single(),
+    admin.from("platform_config").select("key, value").in("key", ["commission_pct", "ambassador_commission_pct", "admin_commission_pct"]),
+  ]);
 
   if (!listing) notFound();
   if ((listing as any).seller_id !== user.id) notFound();
@@ -30,5 +30,11 @@ export default async function EditListingPage({
     redirect(`/listings/${id}`);
   }
 
-  return <EditListingForm listing={listing as any} />;
+  const cfg = Object.fromEntries((configRows ?? []).map((r: any) => [r.key, parseFloat(r.value)]));
+  const commissionPct =
+    (profile as any)?.role === "admin" ? (cfg.admin_commission_pct ?? 0) :
+    (profile as any)?.is_ambassador ? (cfg.ambassador_commission_pct ?? 5) :
+    (cfg.commission_pct ?? 5);
+
+  return <EditListingForm listing={listing as any} commissionPct={commissionPct} />;
 }

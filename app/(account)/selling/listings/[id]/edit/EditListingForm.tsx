@@ -41,7 +41,7 @@ interface ExistingListing {
   listing_images: { id: string; display_url: string; storage_path: string; sort_order: number; is_primary: boolean }[];
 }
 
-export default function EditListingForm({ listing }: { listing: ExistingListing }) {
+export default function EditListingForm({ listing, commissionPct = 5 }: { listing: ExistingListing; commissionPct?: number }) {
   const router = useRouter();
 
   const [title, setTitle] = useState(listing.title);
@@ -64,7 +64,7 @@ export default function EditListingForm({ listing }: { listing: ExistingListing 
 
   const priceCents = Math.round(parseFloat(price || "0") * 100);
   const shippingCents = Math.round(parseFloat(shippingPrice || "0") * 100);
-  const { commission, sellerPayout } = calculateSellerPayout(priceCents, shippingCents, 5);
+  const { commission, sellerPayout } = calculateSellerPayout(priceCents, shippingCents, commissionPct);
 
   const images = [...listing.listing_images].sort((a, b) => a.sort_order - b.sort_order);
 
@@ -259,7 +259,7 @@ export default function EditListingForm({ listing }: { listing: ExistingListing 
           {priceCents > 0 && (
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <Info className="h-3 w-3" />
-              5% platform fee ({formatAUD(commission)}) — you&apos;ll receive approx.{" "}
+              {commissionPct}% platform fee ({formatAUD(commission)}) — you&apos;ll receive approx.{" "}
               <strong className="text-olive">{formatAUD(sellerPayout)}</strong>
             </p>
           )}

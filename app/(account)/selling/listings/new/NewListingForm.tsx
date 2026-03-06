@@ -53,7 +53,7 @@ const INITIAL: FormState = {
   allowsPickup: false,
 };
 
-export default function NewListingForm() {
+export default function NewListingForm({ commissionPct = 5 }: { commissionPct?: number }) {
   const router = useRouter();
   const [form, setForm] = useState<FormState>(INITIAL);
   const [images, setImages] = useState<UploadedImage[]>([]);
@@ -65,7 +65,7 @@ export default function NewListingForm() {
 
   const priceCents = Math.round(parseFloat(form.price || "0") * 100);
   const shippingCents = form.allowsShipping ? Math.round(parseFloat(form.shippingPrice || "0") * 100) : 0;
-  const { commission, stripeFee, sellerPayout } = calculateSellerPayout(priceCents, shippingCents, 5);
+  const { commission, stripeFee, sellerPayout } = calculateSellerPayout(priceCents, shippingCents, commissionPct);
 
   const canProceedToDelivery =
     images.length > 0 &&
@@ -307,7 +307,7 @@ export default function NewListingForm() {
             {priceCents > 0 && (
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <Info className="h-3 w-3" />
-                5% platform fee ({formatAUD(commission)}) — you&apos;ll receive approx.{" "}
+                {commissionPct}% platform fee ({formatAUD(commission)}) — you&apos;ll receive approx.{" "}
                 <strong className="text-olive">{formatAUD(sellerPayout)}</strong>
               </p>
             )}
@@ -648,7 +648,7 @@ export default function NewListingForm() {
                   <span>{form.allowsShipping ? `+${formatAUD(shippingCents)}` : "—"}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Platform fee (5%)</span>
+                  <span className="text-muted-foreground">Platform fee ({commissionPct}%)</span>
                   <span>-{formatAUD(commission)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
