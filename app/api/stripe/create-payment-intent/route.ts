@@ -19,9 +19,17 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01
 
 export async function POST(req: Request) {
   try {
-    const { listing_id, pickup_method = "shipping" } = await req.json() as {
+    const { listing_id, pickup_method = "shipping", shipping_address } = await req.json() as {
       listing_id: string;
       pickup_method?: "shipping" | "local_pickup";
+      shipping_address?: {
+        name: string;
+        line1: string;
+        line2?: string;
+        city: string;
+        state: string;
+        postcode: string;
+      };
     };
 
     if (!listing_id) {
@@ -142,6 +150,14 @@ export async function POST(req: Request) {
         tracking_deadline: pickup_method === "shipping"
           ? new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
           : null,
+        ...(pickup_method === "shipping" && shipping_address ? {
+          shipping_name: shipping_address.name,
+          shipping_address_line1: shipping_address.line1,
+          shipping_address_line2: shipping_address.line2 || null,
+          shipping_city: shipping_address.city,
+          shipping_state: shipping_address.state,
+          shipping_postcode: shipping_address.postcode,
+        } : {}),
       })
       .select("id")
       .single();

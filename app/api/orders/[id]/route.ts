@@ -36,7 +36,13 @@ export async function GET(
       created_at,
       buyer_id,
       seller_id,
-      listing_id
+      listing_id,
+      shipping_name,
+      shipping_address_line1,
+      shipping_address_line2,
+      shipping_city,
+      shipping_state,
+      shipping_postcode
     `)
     .eq("id", id)
     .single();
@@ -104,5 +110,11 @@ export async function GET(
     other_party_id: otherPartyId,
     other_party_username: otherProfile?.username ?? "user",
     has_reviewed: !!existingReview,
+    shipping_name: order.shipping_name ?? null,
+    shipping_address_line1: order.shipping_address_line1 ?? null,
+    shipping_address_line2: order.shipping_address_line2 ?? null,
+    shipping_city: order.shipping_city ?? null,
+    shipping_state: order.shipping_state ?? null,
+    shipping_postcode: order.shipping_postcode ?? null,
   });
 }

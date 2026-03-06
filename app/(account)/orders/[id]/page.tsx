@@ -44,6 +44,12 @@ interface OrderDetail {
   other_party_id: string;
   other_party_username: string;
   has_reviewed: boolean;
+  shipping_name: string | null;
+  shipping_address_line1: string | null;
+  shipping_address_line2: string | null;
+  shipping_city: string | null;
+  shipping_state: string | null;
+  shipping_postcode: string | null;
 }
 
 const STATUS_STEPS_SHIPPING = [
@@ -388,6 +394,21 @@ export default function OrderDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Shipping address — shown to seller (and buyer) for shipping orders */}
+      {order.pickup_method === "shipping" && order.shipping_address_line1 && (
+        <div className="rounded-xl border border-border p-4 mb-6">
+          <p className="text-sm font-medium text-navy mb-2">Ship to</p>
+          <p className="text-sm text-muted-foreground">{order.shipping_name}</p>
+          <p className="text-sm text-muted-foreground">{order.shipping_address_line1}</p>
+          {order.shipping_address_line2 && (
+            <p className="text-sm text-muted-foreground">{order.shipping_address_line2}</p>
+          )}
+          <p className="text-sm text-muted-foreground">
+            {order.shipping_city} {order.shipping_state} {order.shipping_postcode}
+          </p>
+        </div>
+      )}
 
       {/* Local pickup: contact + safety tips */}
       {order.pickup_method === "local_pickup" && order.status === "payment_captured" && (

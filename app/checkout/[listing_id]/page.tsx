@@ -29,10 +29,22 @@ interface ListingData {
   seller_location: string | null;
 }
 
+interface ShippingAddress {
+  name: string;
+  line1: string;
+  line2: string;
+  city: string;
+  state: string;
+  postcode: string;
+}
+
+const EMPTY_ADDRESS: ShippingAddress = { name: "", line1: "", line2: "", city: "", state: "", postcode: "" };
+
 export default function CheckoutPage() {
   const { listing_id } = useParams<{ listing_id: string }>();
   const [listing, setListing] = useState<ListingData | null>(null);
   const [pickupMethod, setPickupMethod] = useState<"shipping" | "local_pickup">("shipping");
+  const [address, setAddress] = useState<ShippingAddress>(EMPTY_ADDRESS);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [loadingListing, setLoadingListing] = useState(true);
@@ -51,12 +63,23 @@ export default function CheckoutPage() {
     load();
   }, [listing_id]);
 
+  const addressValid = pickupMethod === "local_pickup" || (
+    address.name.trim() !== "" &&
+    address.line1.trim() !== "" &&
+    address.city.trim() !== "" &&
+    address.state.trim() !== "" &&
+    address.postcode.trim() !== ""
+  );
+
+  const setAddr = (key: keyof ShippingAddress, value: string) =>
+    setAddress((a) => ({ ...a, [key]: value }));
+
   const createIntent = useCallback(async (method: "shipping" | "local_pickup") => {
     setCreatingIntent(true);
     const res = await fetch("/api/stripe/create-payment-intent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ listing_id, pickup_method: method }),
+      body: JSON.stringify({ listing_id, pickup_method: method, shipping_address: method === "shipping" ? address : undefined }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -73,6 +96,7 @@ export default function CheckoutPage() {
     setPickupMethod(method);
     setClientSecret(null);
     setOrderId(null);
+    setAddress(EMPTY_ADDRESS);
   }
 
   if (loadingListing) {
@@ -187,6 +211,59 @@ export default function CheckoutPage() {
         </div>
       </div>
 
+      {/* Shipping address — only for shipping orders */}
+      {pickupMethod === "shipping" && (
+        <div className="mb-6">
+          <p className="text-sm font-medium text-navy mb-3">Shipping address</p>
+          <div className="space-y-3">
+            <input
+              type="text"
+              placeholder="Full name *"
+              value={address.name}
+              onChange={(e) => setAddr("name", e.target.value)}
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-olive/40"
+            />
+            <input
+              type="text"
+              placeholder="Address line 1 *"
+              value={address.line1}
+              onChange={(e) => setAddr("line1", e.target.value)}
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-olive/40"
+            />
+            <input
+              type="text"
+              placeholder="Address line 2 (optional)"
+              value={address.line2}
+              onChange={(e) => setAddr("line2", e.target.value)}
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-olive/40"
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="text"
+                placeholder="City / Suburb *"
+                value={address.city}
+                onChange={(e) => setAddr("city", e.target.value)}
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-olive/40"
+              />
+              <input
+                type="text"
+                placeholder="State *"
+                value={address.state}
+                onChange={(e) => setAddr("state", e.target.value)}
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-olive/40"
+              />
+            </div>
+            <input
+              type="text"
+              placeholder="Postcode *"
+              value={address.postcode}
+              onChange={(e) => setAddr("postcode", e.target.value)}
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-olive/40"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Buyer protection */}
       <div className="rounded-xl bg-olive/5 border border-olive/20 p-4 flex items-start gap-3 mb-6">
         <ShieldCheck className="h-4 w-4 text-olive mt-0.5 flex-shrink-0" />
@@ -201,7 +278,7 @@ export default function CheckoutPage() {
         <Button
           className="w-full bg-olive hover:bg-olive-light text-cream h-12 text-base"
           onClick={() => createIntent(pickupMethod)}
-          disabled={creatingIntent}
+          disabled={creatingIntent || !addressValid}
         >
           {creatingIntent ? (
             <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Preparing payment…</>
