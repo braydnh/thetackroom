@@ -345,6 +345,32 @@ export async function GET(req: Request) {
     }
   }
 
+  // ── Abandoned cart cleanup: cancel pending_payment orders older than 24 hours ──
+  const cutoff24h = new Date(nowMs - 24 * H).toISOString();
+  const { data: abandonedOrders } = await admin
+    .from("orders")
+    .select("id, listing_id, stripe_payment_intent_id")
+    .eq("status", "pending_payment")
+    .lt("created_at", cutoff24h)
+    .limit(50);
+
+  for (const order of (abandonedOrders ?? [])) {
+    try {
+      // Void the PaymentIntent in Stripe so it can't be completed later
+      if ((order as any).stripe_payment_intent_id) {
+        try {
+          await stripe.paymentIntents.cancel((order as any).stripe_payment_intent_id);
+        } catch {
+          // Already cancelled/succeeded — ignore
+        }
+      }
+      await admin.from("orders").update({ status: "cancelled" }).eq("id", order.id);
+      results.push({ order_id: order.id, status: "ok", detail: "abandoned_cart_cancelled" });
+    } catch (err: any) {
+      results.push({ order_id: order.id, status: "error", detail: `abandoned_cart: ${err.message}` });
+    }
+  }
+
   return NextResponse.json({
     processed: results.length,
     results,
