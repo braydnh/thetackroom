@@ -29,7 +29,7 @@ export async function GET() {
 
   if (profile?.stripe_account_id) {
     const account = await stripe.accounts.retrieve(profile.stripe_account_id);
-    if (account.charges_enabled) {
+    if (account.charges_enabled && account.payouts_enabled) {
       await admin
         .from("profiles")
         .update({ stripe_onboarding_complete: true, role: "seller" })

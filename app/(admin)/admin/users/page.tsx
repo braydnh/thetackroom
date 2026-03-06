@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Star } from "lucide-react";
 import { SuspendUserButton } from "./SuspendUserButton";
 import { DeleteUserButton } from "./DeleteUserButton";
+import { SyncSellersButton } from "./SyncSellersButton";
 
 export default async function AdminUsersPage({
   searchParams,
@@ -34,6 +35,8 @@ export default async function AdminUsersPage({
       <h1 className="text-2xl font-bold text-navy mb-6" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
         Users
       </h1>
+
+      <SyncSellersButton />
 
       <div className="rounded-xl border border-border overflow-hidden divide-y divide-border">
         {(users ?? []).length === 0 ? (

@@ -41,6 +41,10 @@ const FAQ = [
     q: "Is my banking information safe?",
     a: "Yes. Stripe is a global payment company used by millions of businesses. The Tack Room never sees your bank details — they go directly to Stripe.",
   },
+  {
+    q: "I'm under 18 — can I still sell?",
+    a: "Yes, but Stripe requires a parent or legal guardian to be the account owner if you're under 18. During Stripe setup, your parent or guardian will need to complete the verification using their own details and bank account.",
+  },
 ];
 
 function OnboardingContent() {
@@ -115,6 +119,10 @@ function OnboardingContent() {
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+        <span className="font-semibold">Under 18?</span> A parent or legal guardian must complete the Stripe verification as the account owner using their own details and bank account.
       </div>
 
       <Button
