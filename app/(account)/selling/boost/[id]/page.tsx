@@ -19,14 +19,14 @@ const SLOTS = [
     label: "Homepage Feature",
     icon: Home,
     description: "Your listing appears in the featured row on the homepage, seen by every visitor.",
-    pricing: { 7: 1099, 14: 1899 },
+    pricing: { 7: 499, 14: 899 },
   },
   {
     id: "search_top" as const,
     label: "Top of Search",
     icon: Search,
     description: "Your listing is pinned above regular results in the browse/search page.",
-    pricing: { 7: 1099, 14: 1899 },
+    pricing: { 7: 299, 14: 499 },
   },
 ];
 
