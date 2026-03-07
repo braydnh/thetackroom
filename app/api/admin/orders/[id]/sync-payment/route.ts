@@ -59,8 +59,11 @@ export async function POST(
     return NextResponse.json({ error: "Could not retrieve PaymentIntent from Stripe" }, { status: 500 });
   }
 
+  // If payment was never completed, cancel the order and void the intent
   if (pi.status !== "succeeded") {
-    return NextResponse.json({ error: `Payment not succeeded (status: ${pi.status})` }, { status: 400 });
+    try { await stripe.paymentIntents.cancel(piId); } catch { /* already cancelled */ }
+    await admin.from("orders").update({ status: "cancelled" }).eq("id", orderId);
+    return NextResponse.json({ success: true, newStatus: "cancelled", detail: `PaymentIntent was ${pi.status}` });
   }
 
   const newStatus = (order as any).pickup_method === "shipping" ? "awaiting_shipment" : "payment_captured";
