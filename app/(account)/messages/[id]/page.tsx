@@ -261,7 +261,7 @@ export default function MessageThreadPage() {
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-navy">@{meta.other_username}</p>
+          <Link href={`/profile/${meta.other_username}`} className="text-sm font-semibold text-navy hover:underline">@{meta.other_username}</Link>
           {meta.listing_title && (
             <p className="text-xs text-muted-foreground truncate">{meta.listing_title}</p>
           )}
