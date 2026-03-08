@@ -198,9 +198,9 @@ export default async function SellerDashboardPage() {
                         </Link>
                       </Button>
                     )}
-                    <Button size="sm" variant="ghost" asChild>
+                    <Button size="sm" variant="outline" className="text-xs" asChild>
                       <Link href={`/selling/listings/${listing.id}/edit`}>
-                        <ChevronRight className="h-4 w-4" />
+                        Edit
                       </Link>
                     </Button>
                   </div>
