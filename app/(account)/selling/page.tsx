@@ -18,7 +18,17 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
   suspended: { label: "Suspended", color: "bg-red-100 text-red-700" },
 };
 
-export default async function SellerDashboardPage() {
+const LISTINGS_PER_PAGE = 50;
+
+export default async function SellerDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page: pageParam } = await searchParams;
+  const page = Math.max(1, parseInt(pageParam ?? "1", 10));
+  const offset = (page - 1) * LISTINGS_PER_PAGE;
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -36,7 +46,7 @@ export default async function SellerDashboardPage() {
       .eq("seller_id", user.id)
       .neq("status", "deleted")
       .order("created_at", { ascending: false })
-      .limit(50),
+      .range(offset, offset + LISTINGS_PER_PAGE),
   ]);
 
   if (!profile) redirect("/settings?setup=1");
@@ -148,7 +158,7 @@ export default async function SellerDashboardPage() {
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {(listings as any[]).map((listing) => {
+            {(listings as any[]).slice(0, LISTINGS_PER_PAGE).map((listing) => {
               const thumb = listing.primary_image_url ?? null;
               const meta = STATUS_META[listing.status] ?? STATUS_META.draft;
 
@@ -207,6 +217,27 @@ export default async function SellerDashboardPage() {
                 </div>
               );
             })}
+          </div>
+        )}
+        {/* Pagination */}
+        {(page > 1 || (listings ?? []).length > LISTINGS_PER_PAGE) && (
+          <div className="flex items-center justify-between px-5 py-4 border-t border-border bg-white gap-4">
+            {page > 1 ? (
+              <Link
+                href={`/selling?page=${page - 1}`}
+                className="rounded-full border border-border px-5 py-2 text-sm font-medium text-navy hover:bg-olive hover:text-cream hover:border-olive transition-colors"
+              >
+                ← Previous
+              </Link>
+            ) : <div />}
+            {(listings ?? []).length > LISTINGS_PER_PAGE ? (
+              <Link
+                href={`/selling?page=${page + 1}`}
+                className="rounded-full border border-border px-5 py-2 text-sm font-medium text-navy hover:bg-olive hover:text-cream hover:border-olive transition-colors"
+              >
+                Next →
+              </Link>
+            ) : <div />}
           </div>
         )}
       </div>
