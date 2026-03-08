@@ -14,8 +14,18 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
   return { title: `@${username} — The Tack Room AU` };
 }
 
-export default async function SellerProfilePage({ params }: { params: Promise<{ username: string }> }) {
-  const { username } = await params;
+const LISTINGS_PER_PAGE = 12;
+
+export default async function SellerProfilePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ username: string }>;
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const [{ username }, { page: pageParam }] = await Promise.all([params, searchParams]);
+  const page = Math.max(1, parseInt(pageParam ?? "1", 10));
+  const offset = (page - 1) * LISTINGS_PER_PAGE;
   const admin = createAdminClient();
 
   const [{ data: profile }, supabase] = await Promise.all([
@@ -40,7 +50,7 @@ export default async function SellerProfilePage({ params }: { params: Promise<{ 
       .eq("seller_id", profile.id)
       .eq("status", "active")
       .order("created_at", { ascending: false })
-      .limit(12),
+      .range(offset, offset + LISTINGS_PER_PAGE),
     admin
       .from("listings")
       .select("id, title, price, condition, brand, primary_image_url")
@@ -143,10 +153,10 @@ export default async function SellerProfilePage({ params }: { params: Promise<{ 
         <section className="mb-10">
           <h2 className="font-semibold text-navy mb-4 flex items-center gap-2">
             <Package className="h-4 w-4 text-olive" />
-            Active Listings ({(listings ?? []).length})
+            Active Listings
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {(listings as any[]).map((listing) => (
+            {(listings as any[]).slice(0, LISTINGS_PER_PAGE).map((listing) => (
                 <ListingCard
                   key={listing.id}
                   listing={{
@@ -162,6 +172,27 @@ export default async function SellerProfilePage({ params }: { params: Promise<{ 
                 />
             ))}
           </div>
+          {/* Pagination */}
+          {(page > 1 || (listings ?? []).length > LISTINGS_PER_PAGE) && (
+            <div className="flex items-center justify-between mt-6 gap-4">
+              {page > 1 ? (
+                <Link
+                  href={`/profile/${username}?page=${page - 1}`}
+                  className="rounded-full border border-border px-5 py-2 text-sm font-medium text-navy hover:bg-olive hover:text-cream hover:border-olive transition-colors"
+                >
+                  ← Previous
+                </Link>
+              ) : <div />}
+              {(listings ?? []).length > LISTINGS_PER_PAGE ? (
+                <Link
+                  href={`/profile/${username}?page=${page + 1}`}
+                  className="rounded-full border border-border px-5 py-2 text-sm font-medium text-navy hover:bg-olive hover:text-cream hover:border-olive transition-colors"
+                >
+                  Next →
+                </Link>
+              ) : <div />}
+            </div>
+          )}
         </section>
       )}
 
