@@ -18,6 +18,7 @@ const MAINTENANCE_BYPASS_PATHS = [
   "/signup",
   "/forgot-password",
   "/reset-password",
+  "/selling/onboarding", // sellers completing Stripe onboarding must always get through
 ];
 
 export async function proxy(request: NextRequest) {
