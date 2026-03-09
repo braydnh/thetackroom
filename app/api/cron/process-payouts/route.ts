@@ -233,7 +233,7 @@ export async function GET(req: Request) {
 
   async function sendTrackingReminder(order: any, type: "6h" | "2h") {
     const flagField = type === "6h" ? "reminder_6h_sent" : "reminder_2h_sent";
-    const hoursLeft = type === "6h" ? 6 : 2 as 6 | 2;
+    const hoursLeft = Math.max(1, Math.round((new Date(order.tracking_deadline).getTime() - nowMs) / H));
     try {
       const [{ data: profile }, authResult] = await Promise.all([
         admin.from("profiles").select("display_name, username").eq("id", order.seller_id).single(),

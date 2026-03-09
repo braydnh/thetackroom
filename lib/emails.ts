@@ -420,14 +420,15 @@ export function trackingReminderEmail({
   sellerName: string;
   listingTitle: string;
   orderId: string;
-  hoursLeft: 6 | 2;
+  hoursLeft: number;
   deadline: string;
 }) {
-  const isFinal = hoursLeft === 2;
+  const isFinal = hoursLeft <= 3;
   const bannerBg = isFinal ? "#7f1d1d" : "#1a2744";
+  const hoursLabel = `~${hoursLeft} hour${hoursLeft === 1 ? "" : "s"}`;
   const bannerText = isFinal
-    ? `⚠️ Final reminder — tracking due in ~2 hours`
-    : `Reminder — tracking due in ~6 hours`;
+    ? `⚠️ Final reminder — tracking due in ${hoursLabel}`
+    : `Reminder — tracking due in ${hoursLabel}`;
   const urgencyNote = isFinal
     ? `<p style="margin:16px 0 0;font-size:14px;color:#b91c1c;font-weight:600;line-height:1.6">
         If tracking is not submitted before the deadline, the buyer will be offered a full refund and your listing will be reopened.
