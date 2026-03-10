@@ -160,7 +160,7 @@ export default async function ListingsPage({
 
 
 
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 45;
 
 function applyFilters(query: any, params: SearchParams, excludeIds: string[]) {
   if (excludeIds.length > 0) query = query.not("id", "in", `(${excludeIds.join(",")})`);
