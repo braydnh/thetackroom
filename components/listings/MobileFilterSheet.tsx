@@ -17,7 +17,7 @@ export function MobileFilterSheet() {
           Filters
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-72 overflow-y-auto">
+      <SheetContent side="left" className="w-72 overflow-y-auto px-6 py-6">
         <SheetHeader className="mb-4">
           <SheetTitle>Filters</SheetTitle>
         </SheetHeader>
