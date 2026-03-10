@@ -1,10 +1,10 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { FilterSidebar } from "@/components/listings/FilterSidebar";
+import { MobileFilterSheet } from "@/components/listings/MobileFilterSheet";
 import { SortSelect } from "@/components/listings/SortSelect";
 import { ListingGrid } from "@/components/listings/ListingGrid";
 import { Button } from "@/components/ui/button";
-import { SlidersHorizontal } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { FeaturedListings } from "@/components/listings/FeaturedListings";
 import type { ListingCardData } from "@/components/listings/ListingCard";
@@ -133,7 +133,7 @@ export default async function ListingsPage({
         <div className="flex-1 min-w-0">
           {/* Mobile: filter button */}
           <div className="flex lg:hidden items-center justify-between mb-4">
-            <MobileFilterButton />
+            <MobileFilterSheet />
             <Suspense>
               <SortSelect current={params.sort} />
             </Suspense>
@@ -162,14 +162,6 @@ export default async function ListingsPage({
 }
 
 
-function MobileFilterButton() {
-  return (
-    <Button variant="outline" size="sm" className="gap-2">
-      <SlidersHorizontal className="h-4 w-4" />
-      Filters
-    </Button>
-  );
-}
 
 const PAGE_SIZE = 45;
 
