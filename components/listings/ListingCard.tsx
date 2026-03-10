@@ -145,21 +145,21 @@ export function ListingCard({
           <>
             <button
               onClick={prev}
-              className="absolute left-1.5 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 shadow backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 shadow backdrop-blur-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-white"
               aria-label="Previous image"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={next}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 shadow backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 shadow backdrop-blur-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-white"
               aria-label="Next image"
             >
               <ChevronRight className="h-3.5 w-3.5" />
             </button>
 
             {/* Dot indicators */}
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
               {allImages.map((_, i) => (
                 <span
                   key={i}

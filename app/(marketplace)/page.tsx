@@ -36,6 +36,7 @@ async function NewestListings() {
     .from("listings")
     .select(
       `id, title, price, condition, brand, size, allows_pickup, primary_image_url,
+       listing_images(display_url, sort_order),
        profiles!seller_id(username, avatar_url, is_founding_seller, is_ambassador)`
     )
     .eq("status", "active")
@@ -53,6 +54,9 @@ async function NewestListings() {
       size: r.size,
       allows_pickup: r.allows_pickup,
       primary_image: r.primary_image_url ?? null,
+      images: (r.listing_images ?? [])
+        .sort((a: any, b: any) => a.sort_order - b.sort_order)
+        .map((img: any) => img.display_url as string),
       seller_username: seller?.username ?? "unknown",
       seller_avatar: seller?.avatar_url ?? null,
       seller_is_founding: seller?.is_founding_seller ?? false,
