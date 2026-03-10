@@ -17,27 +17,33 @@ interface FeaturedListingsProps {
   excludeIds?: string[];
   /** Show placeholder carousel when empty (homepage only) */
   showEmpty?: boolean;
+  /** Pre-fetched featured listing IDs — skips the featured_listings query */
+  preloadedIds?: string[];
 }
 
 export async function FeaturedListings({
   slot,
   excludeIds = [],
   showEmpty = false,
+  preloadedIds,
 }: FeaturedListingsProps) {
   const supabase = await createClient();
 
-  const now = new Date().toISOString();
-
-  const { data: featuredRows } = await supabase
-    .from("featured_listings")
-    .select("listing_id")
-    .eq("slot", slot)
-    .lte("starts_at", now)
-    .gt("ends_at", now);
-
-  const featuredIds = (featuredRows ?? [])
-    .map((r: any) => r.listing_id as string)
-    .filter((id: string) => !excludeIds.includes(id));
+  let featuredIds: string[];
+  if (preloadedIds !== undefined) {
+    featuredIds = preloadedIds.filter((id) => !excludeIds.includes(id));
+  } else {
+    const now = new Date().toISOString();
+    const { data: featuredRows } = await supabase
+      .from("featured_listings")
+      .select("listing_id")
+      .eq("slot", slot)
+      .lte("starts_at", now)
+      .gt("ends_at", now);
+    featuredIds = (featuredRows ?? [])
+      .map((r: any) => r.listing_id as string)
+      .filter((id: string) => !excludeIds.includes(id));
+  }
 
   if (featuredIds.length === 0) {
     if (!showEmpty) return null;

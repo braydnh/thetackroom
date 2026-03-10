@@ -40,7 +40,7 @@ export default async function FavouritesPage() {
 
   const { data: listings } = await admin
     .from("listings")
-    .select("id, title, price, condition, brand, allows_pickup, primary_image_url, listing_images(display_url, sort_order), profiles!seller_id(username, location)")
+    .select("id, title, price, condition, brand, allows_pickup, primary_image_url, profiles!seller_id(username, location)")
     .in("id", listingIds)
     .in("status", ["active", "reserved"]);
 
@@ -64,9 +64,6 @@ export default async function FavouritesPage() {
                 brand: listing.brand,
                 allows_pickup: listing.allows_pickup,
                 primary_image: listing.primary_image_url ?? null,
-                images: (listing.listing_images ?? [])
-                  .sort((a: any, b: any) => a.sort_order - b.sort_order)
-                  .map((img: any) => img.display_url as string),
                 seller_username: profile?.username ?? "seller",
               }}
             />

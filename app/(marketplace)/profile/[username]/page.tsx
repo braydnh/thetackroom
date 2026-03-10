@@ -46,7 +46,7 @@ export default async function SellerProfilePage({
   const [{ data: listings }, { data: soldListings }, { data: reviews }] = await Promise.all([
     admin
       .from("listings")
-      .select("id, title, price, condition, brand, primary_image_url, listing_images(display_url, sort_order)")
+      .select("id, title, price, condition, brand, primary_image_url")
       .eq("seller_id", profile.id)
       .eq("status", "active")
       .order("created_at", { ascending: false })
@@ -166,9 +166,6 @@ export default async function SellerProfilePage({
                     condition: listing.condition,
                     brand: listing.brand,
                     primary_image: listing.primary_image_url ?? null,
-                    images: (listing.listing_images ?? [])
-                      .sort((a: any, b: any) => a.sort_order - b.sort_order)
-                      .map((img: any) => img.display_url as string),
                     seller_username: (profile as any).username,
                     allows_pickup: false,
                   }}

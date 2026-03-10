@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { Heart, Zap, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatAUDCompact } from "@/lib/utils/currency";
@@ -54,13 +54,27 @@ export function ListingCard({
 }: ListingCardProps) {
   const cond = CONDITION_LABELS[listing.condition];
 
-  // Build the full images array — fall back to primary_image if no array provided
-  const allImages: string[] =
+  // Start with just the primary image; lazy-fetch extras on first hover/touch
+  const [allImages, setAllImages] = useState<string[]>(
     listing.images?.length
       ? listing.images
       : listing.primary_image
       ? [listing.primary_image]
-      : [];
+      : []
+  );
+  const fetchedRef = useRef(false);
+
+  async function ensureImages() {
+    if (fetchedRef.current || allImages.length > 1) return;
+    fetchedRef.current = true;
+    try {
+      const res = await fetch(`/api/listings/${listing.id}/images`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.images?.length > 1) setAllImages(data.images);
+      }
+    } catch { /* non-critical */ }
+  }
 
   const [activeIdx, setActiveIdx] = useState(0);
   const currentImage = allImages[activeIdx] ?? null;
@@ -84,7 +98,7 @@ export function ListingCard({
       className
     )}>
       {/* Image */}
-      <Link href={`/listings/${listing.id}`} className="relative block aspect-square overflow-hidden bg-muted">
+      <Link href={`/listings/${listing.id}`} className="relative block aspect-square overflow-hidden bg-muted" onMouseEnter={ensureImages} onTouchStart={ensureImages}>
         {allImages.length > 0 ? (
           // Render all images and toggle visibility — avoids network lag on arrow click
           allImages.map((src, i) => (

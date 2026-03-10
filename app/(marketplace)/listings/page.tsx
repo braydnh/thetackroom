@@ -143,16 +143,13 @@ export default async function ListingsPage({
           {showFeatured && (
             <div className="mb-8">
               <Suspense fallback={null}>
-                <FeaturedListings slot="search_top" />
+                <FeaturedListings slot="search_top" preloadedIds={featuredIds} />
               </Suspense>
             </div>
           )}
 
           <Suspense fallback={<ListingGrid listings={[]} loading />}>
             <ListingsContent params={params} excludeIds={featuredIds} />
-          </Suspense>
-          <Suspense fallback={null}>
-            <PaginationRow params={params} excludeIds={featuredIds} />
           </Suspense>
         </div>
       </div>
@@ -163,7 +160,7 @@ export default async function ListingsPage({
 
 
 
-const PAGE_SIZE = 45;
+const PAGE_SIZE = 30;
 
 function applyFilters(query: any, params: SearchParams, excludeIds: string[]) {
   if (excludeIds.length > 0) query = query.not("id", "in", `(${excludeIds.join(",")})`);
@@ -195,7 +192,6 @@ function buildQuery(supabase: any, params: SearchParams, excludeIds: string[]) {
     .from("listings")
     .select(
       `id, title, price, condition, brand, size, allows_pickup, primary_image_url,
-       listing_images(display_url, sort_order),
        profiles!seller_id(username, avatar_url, is_founding_seller, is_ambassador)`
     )
     .eq("status", "active");
@@ -227,9 +223,14 @@ async function ListingsContent({ params, excludeIds = [] }: { params: SearchPara
   const page = Math.max(1, parseInt(params.page ?? "1", 10));
   const offset = (page - 1) * PAGE_SIZE;
 
-  const { data: rows } = await buildQuery(supabase, params, excludeIds).range(offset, offset + PAGE_SIZE - 1);
+  // Fetch PAGE_SIZE + 1 to detect if a next page exists — avoids a second DB query
+  const { data: rows } = await buildQuery(supabase, params, excludeIds).range(offset, offset + PAGE_SIZE);
 
-  const listings: ListingCardData[] = (rows ?? []).map((r: any) => {
+  const hasNext = (rows?.length ?? 0) > PAGE_SIZE;
+  const hasPrev = page > 1;
+  const visibleRows = (rows ?? []).slice(0, PAGE_SIZE);
+
+  const listings: ListingCardData[] = visibleRows.map((r: any) => {
     const seller = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
     return {
       id: r.id,
@@ -240,9 +241,6 @@ async function ListingsContent({ params, excludeIds = [] }: { params: SearchPara
       size: r.size,
       allows_pickup: r.allows_pickup,
       primary_image: r.primary_image_url ?? null,
-      images: (r.listing_images ?? [])
-        .sort((a: any, b: any) => a.sort_order - b.sort_order)
-        .map((img: any) => img.display_url as string),
       seller_username: seller?.username ?? "unknown",
       seller_avatar: seller?.avatar_url ?? null,
       seller_is_founding: seller?.is_founding_seller ?? false,
@@ -251,52 +249,36 @@ async function ListingsContent({ params, excludeIds = [] }: { params: SearchPara
   });
 
   return (
-    <ListingGrid
-      listings={listings}
-      emptyMessage={
-        params.q || params.category || params.condition
-          ? "No listings match your filters."
-          : "No listings yet — be the first to list your gear!"
-      }
-    />
-  );
-}
-
-async function PaginationRow({ params, excludeIds = [] }: { params: SearchParams; excludeIds?: string[] }) {
-  const supabase = await createClient();
-  const page = Math.max(1, parseInt(params.page ?? "1", 10));
-  const offset = (page - 1) * PAGE_SIZE;
-
-  // Lightweight check: peek at one row beyond the current page (no joins)
-  const peekQuery = applySort(
-    applyFilters(supabase.from("listings").select("id").eq("status", "active"), params, excludeIds),
-    params
-  );
-  const { data: peek } = await peekQuery.range(offset + PAGE_SIZE, offset + PAGE_SIZE).maybeSingle();
-  const hasNext = !!peek;
-  const hasPrev = page > 1;
-
-  if (!hasNext && !hasPrev) return null;
-
-  return (
-    <div className="flex items-center justify-between mt-10 gap-4">
-      {hasPrev ? (
-        <Link
-          href={buildPageUrl(params, page - 1)}
-          className="rounded-full border border-border px-5 py-2 text-sm font-medium text-navy hover:bg-olive hover:text-cream hover:border-olive transition-colors"
-        >
-          ← Previous
-        </Link>
-      ) : <div />}
-      <span className="text-sm text-muted-foreground">Page {page}</span>
-      {hasNext ? (
-        <Link
-          href={buildPageUrl(params, page + 1)}
-          className="rounded-full border border-border px-5 py-2 text-sm font-medium text-navy hover:bg-olive hover:text-cream hover:border-olive transition-colors"
-        >
-          Next →
-        </Link>
-      ) : <div />}
-    </div>
+    <>
+      <ListingGrid
+        listings={listings}
+        emptyMessage={
+          params.q || params.category || params.condition
+            ? "No listings match your filters."
+            : "No listings yet — be the first to list your gear!"
+        }
+      />
+      {(hasNext || hasPrev) && (
+        <div className="flex items-center justify-between mt-10 gap-4">
+          {hasPrev ? (
+            <Link
+              href={buildPageUrl(params, page - 1)}
+              className="rounded-full border border-border px-5 py-2 text-sm font-medium text-navy hover:bg-olive hover:text-cream hover:border-olive transition-colors"
+            >
+              ← Previous
+            </Link>
+          ) : <div />}
+          <span className="text-sm text-muted-foreground">Page {page}</span>
+          {hasNext ? (
+            <Link
+              href={buildPageUrl(params, page + 1)}
+              className="rounded-full border border-border px-5 py-2 text-sm font-medium text-navy hover:bg-olive hover:text-cream hover:border-olive transition-colors"
+            >
+              Next →
+            </Link>
+          ) : <div />}
+        </div>
+      )}
+    </>
   );
 }
