@@ -2,9 +2,9 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Heart, Zap, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatAUDCompact } from "@/lib/utils/currency";
-import { supabaseImageUrl } from "@/lib/utils/images";
 import type { ListingCondition } from "@/types/database.types";
 import { cn } from "@/lib/utils";
 
@@ -78,7 +78,6 @@ export function ListingCard({
   }
 
   const [activeIdx, setActiveIdx] = useState(0);
-  const currentImage = allImages[activeIdx] ?? null;
 
   function prev(e: React.MouseEvent) {
     e.preventDefault();
@@ -103,13 +102,14 @@ export function ListingCard({
         {allImages.length > 0 ? (
           // Render all images and toggle visibility — avoids network lag on arrow click
           allImages.map((src, i) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               key={src}
-              src={supabaseImageUrl(src, 400) ?? src}
+              src={src}
               alt={listing.title}
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className={cn(
-                "absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300",
+                "object-cover group-hover:scale-105 transition-transform duration-300",
                 i === activeIdx ? "opacity-100" : "opacity-0"
               )}
             />
