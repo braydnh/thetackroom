@@ -4,7 +4,6 @@ import { useState, useRef } from "react";
 import Link from "next/link";
 import { Heart, Zap, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatAUDCompact } from "@/lib/utils/currency";
-import { supabaseImageUrl } from "@/lib/utils/images";
 import type { ListingCondition } from "@/types/database.types";
 import { cn } from "@/lib/utils";
 
@@ -106,7 +105,7 @@ export function ListingCard({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               key={src}
-              src={supabaseImageUrl(src, 400) ?? src}
+              src={src}
               alt={listing.title}
               className={cn(
                 "absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300",
