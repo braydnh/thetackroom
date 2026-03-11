@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { Separator } from "@/components/ui/separator";
 import { ImageUpload, type UploadedImage } from "@/components/listings/ImageUpload";
 import { formatAUD, calculateSellerPayout } from "@/lib/utils/currency";
+import { compressImage } from "@/lib/utils/images";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Info } from "lucide-react";
@@ -139,12 +140,13 @@ export default function NewListingForm({ commissionPct = 5 }: { commissionPct?: 
 
         if (!img.file) continue;
 
-        const ext = img.file.name.split(".").pop() ?? "jpg";
+        const compressed = await compressImage(img.file);
+        const ext = compressed.name.split(".").pop() ?? "jpg";
         const path = `${user.id}/${listing.id}/${i}-${Date.now()}.${ext}`;
 
         const { error: uploadError } = await supabase.storage
           .from("listing-images")
-          .upload(path, img.file, { contentType: img.file.type, upsert: false });
+          .upload(path, compressed, { contentType: compressed.type, upsert: false });
 
         if (uploadError) throw new Error(`Image upload failed: ${uploadError.message}`);
 
