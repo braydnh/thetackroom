@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,11 +25,13 @@ export function ListingImageGallery({ images, title }: ListingImageGalleryProps)
     <div className="space-y-3">
       {/* Main image */}
       <div className="relative aspect-square rounded-xl overflow-hidden bg-muted group">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src={images[active]}
           alt={`${title} — image ${active + 1}`}
-          className="absolute inset-0 w-full h-full object-cover"
+          fill
+          sizes="(max-width: 768px) 100vw, 50vw"
+          className="object-cover"
+          priority
         />
         {/* Zoom hint */}
         <div className="absolute top-3 right-3 rounded-full bg-black/30 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -80,8 +83,7 @@ export function ListingImageGallery({ images, title }: ListingImageGalleryProps)
                 i === active ? "border-olive" : "border-transparent"
               )}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={img} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              <Image src={img} alt="" fill sizes="64px" className="object-cover" />
             </button>
           ))}
         </div>
