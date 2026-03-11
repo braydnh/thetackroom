@@ -25,6 +25,44 @@ export function to17TrackCode(carrier: string): number {
   return CARRIER_CODE_MAP[carrier] ?? 100066;
 }
 
+/**
+ * Poll 17track for the current delivery status of multiple tracking numbers.
+ * Returns a Map of trackingNumber → tag (e.g. "Delivered", "InTransit").
+ * Batches up to 40 numbers per call (17track limit).
+ */
+export async function poll17TrackStatus(
+  trackingNumbers: string[]
+): Promise<Map<string, string>> {
+  const apiKey = process.env.SEVENTEEN_TRACK_API_KEY;
+  if (!apiKey || trackingNumbers.length === 0) return new Map();
+
+  const result = new Map<string, string>();
+  const BATCH = 40;
+
+  for (let i = 0; i < trackingNumbers.length; i += BATCH) {
+    const batch = trackingNumbers.slice(i, i + BATCH);
+    try {
+      const res = await fetch(`${SEVENTEEN_TRACK_BASE}/gettrackinfo`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "17token": apiKey },
+        body: JSON.stringify(batch.map((n) => ({ number: n }))),
+      });
+      if (!res.ok) {
+        console.error("17track gettrackinfo error:", res.status);
+        continue;
+      }
+      const data = await res.json();
+      for (const item of data?.data?.accepted ?? []) {
+        if (item.number && item.tag) result.set(item.number as string, item.tag as string);
+      }
+    } catch (err) {
+      console.error("17track gettrackinfo fetch error:", err);
+    }
+  }
+
+  return result;
+}
+
 export async function create17TrackTracking({
   trackingNumber,
   carrier,
