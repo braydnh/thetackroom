@@ -105,7 +105,7 @@ function NotificationBell({ unreadNotifications = 0 }: { unreadNotifications: nu
       {open && (
         <div
           ref={panelRef}
-          className="fixed top-[97px] left-4 sm:left-6 z-50 w-72 rounded-xl border border-border bg-white shadow-lg overflow-hidden"
+          className="fixed top-[97px] right-4 sm:right-6 z-50 w-72 rounded-xl border border-border bg-white shadow-lg overflow-hidden"
         >
           <div className="px-3 py-2 border-b border-border">
             <p className="text-xs font-semibold text-navy uppercase tracking-wide">Notifications</p>
