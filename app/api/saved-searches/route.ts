@@ -5,6 +5,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET() {
   const supabase = await createClient();
@@ -51,17 +52,40 @@ export async function POST(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Check for existing matching listings so the user knows about them immediately
+  // Check for existing matching listings using ilike for reliability
   let existingCount = 0;
+  let existingMatches: { id: string; title: string; price: number }[] = [];
   if (query) {
+    const words = query.trim().split(/\s+/).filter(Boolean);
     let q = (supabase as any)
       .from("listings")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "active")
-      .textSearch("search_vector", query, { type: "websearch" });
+      .select("id, title, price")
+      .eq("status", "active");
+
+    // Match any word in title (case-insensitive)
+    const orFilter = words.map((w: string) => `title.ilike.%${w}%`).join(",");
+    q = q.or(orFilter);
+
     if (category) q = q.eq("category", category);
-    const { count } = await q;
-    existingCount = count ?? 0;
+    const { data: matches } = await q.limit(5);
+    existingMatches = matches ?? [];
+    existingCount = existingMatches.length;
+  }
+
+  // Send immediate in-app notification if existing listings match
+  if (existingCount > 0) {
+    const admin = createAdminClient();
+    const searchUrl = `/listings${query ? `?q=${encodeURIComponent(query)}` : category ? `?category=${category}` : ""}`;
+    const listingWord = existingCount === 1 ? "listing" : "listings";
+    await admin.from("notifications").insert({
+      user_id: user.id,
+      type: "saved_search_match",
+      title: `${existingCount} ${listingWord} already match "${name.trim()}"`,
+      body: existingCount === 1
+        ? `"${existingMatches[0].title}" is already listed.`
+        : `${existingCount} listings already match your watchlist item.`,
+      link: searchUrl,
+    });
   }
 
   const searchUrl = `/listings${query ? `?q=${encodeURIComponent(query)}` : category ? `?category=${category}` : ""}`;
