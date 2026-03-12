@@ -8,7 +8,6 @@ import { ListingsSearchBar } from "@/components/listings/ListingsSearchBar";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { FeaturedListings } from "@/components/listings/FeaturedListings";
-import { SaveSearchButton } from "@/components/listings/SaveSearchButton";
 import type { ListingCardData } from "@/components/listings/ListingCard";
 import type { ListingCondition, ListingCategory } from "@/types/database.types";
 import { expandSubValues } from "@/lib/categories";
@@ -122,18 +121,6 @@ export default async function ListingsPage({
             {buildTitle(params)}
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">Pre-loved equestrian gear</p>
-          {(params.q || params.category || params.condition || params.min || params.max) && (
-            <div className="mt-2">
-              <SaveSearchButton
-                query={params.q}
-                category={params.category}
-                sub={params.sub}
-                condition={params.condition}
-                min={params.min}
-                max={params.max}
-              />
-            </div>
-          )}
         </div>
         {/* Sort */}
         <div className="hidden sm:flex items-center gap-2">
