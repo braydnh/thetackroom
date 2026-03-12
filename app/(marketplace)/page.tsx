@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, ArrowRight, ShieldCheck, Truck, Star } from "lucide-react";
+import { ArrowRight, ShieldCheck, Truck, Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { ListingsSearchBar } from "@/components/listings/ListingsSearchBar";
 import { ListingGrid } from "@/components/listings/ListingGrid";
 import { FeaturedListings } from "@/components/listings/FeaturedListings";
 import { AmbassadorSlideshow } from "@/components/listings/AmbassadorSlideshow";
@@ -143,28 +145,14 @@ export default async function HomePage() {
           </div>
 
           {/* Search bar */}
-          <form
-            action="/listings"
-            method="GET"
-            className="mx-auto max-w-2xl"
-          >
-            <div className="relative flex items-center">
-              <Search className="pointer-events-none absolute left-4 h-5 w-5 text-muted-foreground" />
-              <input
-                name="q"
-                type="search"
-                placeholder="Search saddles, rugs, bridles, helmets…"
-                className="w-full rounded-full bg-white py-3.5 pl-12 pr-24 text-sm text-navy placeholder:text-muted-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-cream/40"
-                autoComplete="off"
+          <div className="mx-auto max-w-2xl">
+            <Suspense>
+              <ListingsSearchBar
+                large
+                placeholder="Search saddles, rugs, bridles, sellers…"
               />
-              <button
-                type="submit"
-                className="absolute right-2 rounded-full bg-olive-light px-5 py-2 text-sm font-medium text-cream hover:bg-olive-dark transition-colors"
-              >
-                Search
-              </button>
-            </div>
-          </form>
+            </Suspense>
+          </div>
 
           {/* Quick CTAs */}
           <div className="mt-4 flex justify-center gap-2">

@@ -12,7 +12,7 @@ interface ProfileResult {
   avatar_url: string | null;
 }
 
-export function ListingsSearchBar({ defaultValue }: { defaultValue?: string }) {
+export function ListingsSearchBar({ defaultValue, large, placeholder }: { defaultValue?: string; large?: boolean; placeholder?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [value, setValue] = useState(defaultValue ?? "");
@@ -113,7 +113,7 @@ export function ListingsSearchBar({ defaultValue }: { defaultValue?: string }) {
   return (
     <div ref={containerRef} className="relative w-full">
       <form onSubmit={(e) => { e.preventDefault(); submitListingSearch(); }}>
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
+        <Search className={`absolute top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none z-10 ${large ? "left-4 h-5 w-5" : "left-3.5 h-4 w-4"}`} />
         <input
           ref={inputRef}
           type="text"
@@ -121,10 +121,17 @@ export function ListingsSearchBar({ defaultValue }: { defaultValue?: string }) {
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => value.trim().length >= 2 && profiles.length > 0 && setOpen(true)}
-          placeholder="Search listings or sellers…"
-          className="w-full rounded-full border border-border bg-white pl-10 pr-10 py-2.5 text-sm text-navy placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-olive/30 focus:border-olive transition-colors"
+          placeholder={placeholder ?? "Search listings or sellers…"}
+          className={`w-full rounded-full border border-border bg-white text-navy placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-olive/30 focus:border-olive transition-colors ${large ? "pl-12 pr-28 py-3.5 text-sm shadow-sm focus:ring-cream/40" : "pl-10 pr-10 py-2.5 text-sm"}`}
         />
-        {value && (
+        {large ? (
+          <button
+            type="submit"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-olive-light px-5 py-2 text-sm font-medium text-cream hover:bg-olive transition-colors z-10"
+          >
+            Search
+          </button>
+        ) : value ? (
           <button
             type="button"
             onClick={clear}
@@ -132,7 +139,7 @@ export function ListingsSearchBar({ defaultValue }: { defaultValue?: string }) {
           >
             <X className="h-4 w-4" />
           </button>
-        )}
+        ) : null}
       </form>
 
       {showDropdown && (
