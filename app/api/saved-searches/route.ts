@@ -6,6 +6,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendEmail } from "@/lib/resend";
+import { savedSearchMatchEmail } from "@/lib/emails";
 
 export async function GET() {
   const supabase = await createClient();
@@ -72,11 +74,12 @@ export async function POST(req: Request) {
     existingCount = existingMatches.length;
   }
 
-  // Send immediate in-app notification if existing listings match
+  // Send immediate in-app notification + email if existing listings match
   if (existingCount > 0) {
     const admin = createAdminClient();
     const searchUrl = `/listings${query ? `?q=${encodeURIComponent(query)}` : category ? `?category=${category}` : ""}`;
     const listingWord = existingCount === 1 ? "listing" : "listings";
+
     await admin.from("notifications").insert({
       user_id: user.id,
       type: "saved_search_match",
@@ -86,6 +89,23 @@ export async function POST(req: Request) {
         : `${existingCount} listings already match your watchlist item.`,
       link: searchUrl,
     });
+
+    try {
+      const { data: { user: authUser } } = await admin.auth.admin.getUserById(user.id);
+      if (authUser?.email) {
+        await sendEmail({
+          to: authUser.email,
+          subject: `${existingCount} ${listingWord} already match "${name.trim()}" on The Tack Room`,
+          html: savedSearchMatchEmail({
+            watchName: name.trim(),
+            matches: existingMatches.map((m) => ({ id: m.id, title: m.title, price: m.price })),
+            searchUrl,
+          }),
+        });
+      }
+    } catch (emailErr: any) {
+      console.error("Watchlist existing-match email failed:", emailErr.message);
+    }
   }
 
   const searchUrl = `/listings${query ? `?q=${encodeURIComponent(query)}` : category ? `?category=${category}` : ""}`;
