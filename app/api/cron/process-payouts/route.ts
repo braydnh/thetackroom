@@ -30,7 +30,6 @@ import {
   trackingReminderEmail,
   itemDeliveredSellerEmail,
   itemDeliveredBuyerEmail,
-  savedSearchMatchEmail,
 } from "@/lib/emails";
 import { formatAUD } from "@/lib/utils/currency";
 import { poll17TrackStatus } from "@/lib/17track";
@@ -459,80 +458,6 @@ export async function GET(req: Request) {
         console.error(`Delivery poll update failed for order ${order.id}:`, err.message);
         results.push({ order_id: order.id, status: "error", detail: `delivery_poll: ${err.message}` });
       }
-    }
-  }
-
-  // ── Saved search notifications ──
-  // For each saved search, find listings posted since last_notified_at and notify the user
-  const { data: savedSearches } = await (admin as any)
-    .from("saved_searches")
-    .select("id, user_id, name, query, category, subcategory, condition, min_price, max_price, last_notified_at")
-    .not("last_notified_at", "is", null)
-    .order("last_notified_at", { ascending: true })
-    .limit(50);
-
-  for (const search of (savedSearches ?? []) as any[]) {
-    try {
-      let q = admin
-        .from("listings")
-        .select("id, title, price")
-        .eq("status", "active")
-        .gt("created_at", search.last_notified_at)
-        .limit(5);
-
-      if (search.query) q = (q as any).textSearch("search_vector", search.query, { type: "websearch" });
-      if (search.category) q = (q as any).eq("category", search.category);
-      if (search.subcategory?.length) q = (q as any).in("subcategory", search.subcategory);
-      if (search.condition?.length) q = (q as any).in("condition", search.condition);
-      if (search.min_price) q = (q as any).gte("price", search.min_price);
-      if (search.max_price) q = (q as any).lte("price", search.max_price);
-
-      const { data: matches } = await (q as any);
-
-      // Always update last_notified_at so we don't re-check old listings next run
-      await (admin as any)
-        .from("saved_searches")
-        .update({ last_notified_at: now })
-        .eq("id", search.id);
-
-      if (!matches || matches.length === 0) continue;
-
-      // Build link back to the matching listings
-      const searchUrl = `/listings${search.query ? `?q=${encodeURIComponent(search.query)}` : search.category ? `?category=${search.category}` : ""}`;
-      const listingWord = matches.length === 1 ? "listing" : "listings";
-
-      // In-app notification
-      await admin.from("notifications").insert({
-        user_id: search.user_id,
-        type: "saved_search_match",
-        title: `New ${listingWord} match "${search.name}"`,
-        body: matches.length === 1
-          ? `"${matches[0].title}" was just listed.`
-          : `${matches.length} new ${listingWord} match your watchlist.`,
-        link: searchUrl,
-      });
-
-      // Email notification
-      try {
-        const { data: { user: authUser } } = await admin.auth.admin.getUserById(search.user_id);
-        if (authUser?.email) {
-          await sendEmail({
-            to: authUser.email,
-            subject: `New ${listingWord} match "${search.name}" on The Tack Room`,
-            html: savedSearchMatchEmail({
-              watchName: search.name,
-              matches: matches.map((m: any) => ({ id: m.id, title: m.title, price: m.price })),
-              searchUrl,
-            }),
-          });
-        }
-      } catch (emailErr: any) {
-        console.error(`Saved search email failed for ${search.id}:`, emailErr.message);
-      }
-
-      results.push({ order_id: `saved_search:${search.id}`, status: "ok", detail: `${matches.length} matches` });
-    } catch (err: any) {
-      console.error(`Saved search ${search.id} notification failed:`, err.message);
     }
   }
 
