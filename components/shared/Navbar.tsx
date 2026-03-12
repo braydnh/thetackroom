@@ -98,8 +98,8 @@ function NotificationBell({ unreadNotifications = 0 }: { unreadNotifications: nu
         ) : (
           <div className="max-h-80 overflow-y-auto divide-y divide-border">
             {notifications.map((n) => (
-              <DropdownMenuItem key={n.id} asChild className={cn("p-0", !n.read_at && "bg-olive/5")}>
-                <Link href={n.link ?? "/"} className="flex flex-col gap-0.5 px-3 py-2 w-full cursor-pointer">
+              <DropdownMenuItem key={n.id} asChild className={cn("p-0 !text-left", !n.read_at && "bg-olive/5")}>
+                <Link href={n.link ?? "/"} className="flex flex-col gap-0.5 px-3 py-2 w-full cursor-pointer text-left">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-semibold text-navy leading-tight">{n.title}</span>
                     <span className="text-[10px] text-muted-foreground shrink-0">{formatTimeAgo(n.created_at)}</span>
