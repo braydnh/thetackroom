@@ -11,7 +11,7 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("saved_searches")
     .select("id, name, query, category, subcategory, condition, min_price, max_price, created_at, last_notified_at")
     .eq("user_id", user.id)
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("saved_searches")
     .insert({
       user_id: user.id,

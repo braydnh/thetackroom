@@ -9,7 +9,7 @@ export default async function SavedSearchesPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/saved-searches");
 
-  const { data: searches } = await supabase
+  const { data: searches } = await (supabase as any)
     .from("saved_searches")
     .select("id, name, query, category, subcategory, condition, min_price, max_price, created_at")
     .eq("user_id", user.id)

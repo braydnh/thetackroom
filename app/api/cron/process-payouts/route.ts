@@ -463,7 +463,7 @@ export async function GET(req: Request) {
 
   // ── Saved search notifications ──
   // For each saved search, find listings posted since last_notified_at and notify the user
-  const { data: savedSearches } = await admin
+  const { data: savedSearches } = await (admin as any)
     .from("saved_searches")
     .select("id, user_id, name, query, category, subcategory, condition, min_price, max_price, last_notified_at")
     .not("last_notified_at", "is", null)
@@ -489,7 +489,7 @@ export async function GET(req: Request) {
       const { data: matches } = await (q as any);
 
       // Always update last_notified_at so we don't re-check old listings next run
-      await admin
+      await (admin as any)
         .from("saved_searches")
         .update({ last_notified_at: now })
         .eq("id", search.id);
