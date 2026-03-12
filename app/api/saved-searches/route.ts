@@ -50,5 +50,20 @@ export async function POST(req: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ id: data.id });
+
+  // Check for existing matching listings so the user knows about them immediately
+  let existingCount = 0;
+  if (query) {
+    let q = (supabase as any)
+      .from("listings")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "active")
+      .textSearch("search_vector", query, { type: "websearch" });
+    if (category) q = q.eq("category", category);
+    const { count } = await q;
+    existingCount = count ?? 0;
+  }
+
+  const searchUrl = `/listings${query ? `?q=${encodeURIComponent(query)}` : category ? `?category=${category}` : ""}`;
+  return NextResponse.json({ id: data.id, existingCount, searchUrl });
 }
