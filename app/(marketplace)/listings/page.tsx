@@ -233,9 +233,15 @@ async function ListingsContent({ params, excludeIds = [] }: { params: SearchPara
   const page = Math.max(1, parseInt(params.page ?? "1", 10));
   const offset = (page - 1) * PAGE_SIZE;
 
+  // Build count query separately (no join needed — avoids silent failure from chained .select())
+  function buildCountQuery(sb: any) {
+    let q = sb.from("listings").select("id", { count: "exact", head: true }).eq("status", "active");
+    return applyFilters(q, params, excludeIds);
+  }
+
   const [{ data: rows }, { count }] = await Promise.all([
     buildQuery(supabase, params, excludeIds).range(offset, offset + PAGE_SIZE - 1),
-    buildQuery(supabase, params, excludeIds).select("id", { count: "exact", head: true }),
+    buildCountQuery(supabase),
   ]);
 
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
