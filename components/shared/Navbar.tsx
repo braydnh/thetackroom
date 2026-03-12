@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Logo } from "./Logo";
 import { CATEGORIES, type CategoryConfig } from "@/lib/categories";
+import { cn } from "@/lib/utils";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -54,63 +55,93 @@ function NotificationBell({ unreadNotifications = 0 }: { unreadNotifications: nu
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasUnread, setHasUnread] = useState(unreadNotifications > 0);
+  const [open, setOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
-  async function handleOpenChange(open: boolean) {
-    if (!open) return;
-    setLoading(true);
-    try {
-      const res = await fetch("/api/notifications");
-      const data = await res.json();
-      setNotifications(Array.isArray(data) ? data : []);
-    } finally {
-      setLoading(false);
-    }
-    if (hasUnread) {
-      fetch("/api/notifications", { method: "PATCH" });
-      setHasUnread(false);
+  async function handleOpen() {
+    setOpen((prev) => !prev);
+    if (!open) {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/notifications");
+        const data = await res.json();
+        setNotifications(Array.isArray(data) ? data : []);
+      } finally {
+        setLoading(false);
+      }
+      if (hasUnread) {
+        fetch("/api/notifications", { method: "PATCH" });
+        setHasUnread(false);
+      }
     }
   }
 
+  // Close on click outside
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (
+        panelRef.current && !panelRef.current.contains(e.target as Node) &&
+        buttonRef.current && !buttonRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
   return (
-    <DropdownMenu onOpenChange={handleOpenChange}>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          {hasUnread && (
-            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 border border-white" />
-          )}
-          <span className="sr-only">Notifications</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-72 p-0">
-        <div className="px-3 py-2 border-b border-border">
-          <p className="text-xs font-semibold text-navy uppercase tracking-wide">Notifications</p>
-        </div>
-        {loading ? (
-          <div className="flex items-center justify-center p-6">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+    <>
+      <Button ref={buttonRef} variant="ghost" size="icon" className="relative" onClick={handleOpen}>
+        <Bell className="h-5 w-5" />
+        {hasUnread && (
+          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 border border-white" />
+        )}
+        <span className="sr-only">Notifications</span>
+      </Button>
+
+      {open && (
+        <div
+          ref={panelRef}
+          className="fixed top-[97px] left-4 sm:left-6 z-50 w-72 rounded-xl border border-border bg-white shadow-lg overflow-hidden"
+        >
+          <div className="px-3 py-2 border-b border-border">
+            <p className="text-xs font-semibold text-navy uppercase tracking-wide">Notifications</p>
           </div>
-        ) : notifications.length === 0 ? (
-          <div className="p-6 text-center">
-            <p className="text-xs text-muted-foreground">No notifications yet</p>
-          </div>
-        ) : (
-          <div className="max-h-80 overflow-y-auto divide-y divide-border">
-            {notifications.map((n) => (
-              <DropdownMenuItem key={n.id} asChild className={!n.read_at ? "bg-olive/5" : ""}>
-                <Link href={n.link ?? "/"} className="flex flex-col gap-0.5 px-3 py-2 cursor-pointer">
+          {loading ? (
+            <div className="flex items-center justify-center p-6">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="p-6 text-center">
+              <p className="text-xs text-muted-foreground">No notifications yet</p>
+            </div>
+          ) : (
+            <div className="max-h-80 overflow-y-auto divide-y divide-border">
+              {notifications.map((n) => (
+                <Link
+                  key={n.id}
+                  href={n.link ?? "/"}
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "flex flex-col gap-0.5 px-3 py-2 hover:bg-muted/50 transition-colors",
+                    !n.read_at && "bg-olive/5"
+                  )}
+                >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-semibold text-navy leading-tight">{n.title}</span>
                     <span className="text-[10px] text-muted-foreground shrink-0">{formatTimeAgo(n.created_at)}</span>
                   </div>
                   {n.body && <span className="text-[11px] text-muted-foreground leading-snug">{n.body}</span>}
                 </Link>
-              </DropdownMenuItem>
-            ))}
-          </div>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </>
   );
 }
 
