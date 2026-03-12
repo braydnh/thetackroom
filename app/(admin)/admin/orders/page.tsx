@@ -33,7 +33,7 @@ export default async function AdminOrdersPage({
 
   let query = admin
     .from("orders")
-    .select("id, status, subtotal, shipping_amount, pickup_method, created_at, buyer_id, seller_id, listing_id, stripe_payment_intent_id, stripe_transfer_id")
+    .select("id, status, subtotal, shipping_amount, pickup_method, created_at, buyer_id, seller_id, listing_id, stripe_payment_intent_id, stripe_transfer_id, tracking_number")
     .order("created_at", { ascending: false })
     .range(offset, offset + pageSize - 1);
 
@@ -42,7 +42,8 @@ export default async function AdminOrdersPage({
   }
 
   if (q.trim()) {
-    query = (query as any).ilike("id", `${q.trim()}%`);
+    // Search by order ID prefix OR full tracking number
+    query = (query as any).or(`id.ilike.${q.trim()}%,tracking_number.ilike.%${q.trim()}%`);
   }
 
   const { data: orders } = await (query as any);
@@ -74,7 +75,7 @@ export default async function AdminOrdersPage({
           name="q"
           defaultValue={q}
           type="search"
-          placeholder="Search by order ID…"
+          placeholder="Search by order ID or tracking number…"
           className="w-full max-w-sm rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-olive/30"
           autoComplete="off"
         />
@@ -112,6 +113,9 @@ export default async function AdminOrdersPage({
                 <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
                   <span>{formatAUD(order.subtotal + order.shipping_amount)}</span>
                   <span>{new Date(order.created_at).toLocaleDateString("en-AU")}</span>
+                  {order.tracking_number && (
+                    <span className="font-mono">{order.tracking_number}</span>
+                  )}
                 </div>
               </div>
 
