@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Bell, Search, Trash2 } from "lucide-react";
+import { Bell, Search } from "lucide-react";
 import { DeleteSavedSearchButton } from "./DeleteSavedSearchButton";
+import { AddWatchlistItem } from "./AddWatchlistItem";
 
 export default async function SavedSearchesPage() {
   const supabase = await createClient();
@@ -27,51 +28,43 @@ export default async function SavedSearchesPage() {
     return `/listings${qs ? `?${qs}` : ""}`;
   }
 
-  function describeSearch(s: any): string {
-    const parts: string[] = [];
-    if (s.query) parts.push(`"${s.query}"`);
-    if (s.category) parts.push(s.category);
-    if (s.condition?.length) parts.push(s.condition.join(", "));
-    if (s.min_price || s.max_price) {
-      const min = s.min_price ? `$${s.min_price / 100}` : "";
-      const max = s.max_price ? `$${s.max_price / 100}` : "";
-      parts.push(min && max ? `${min}–${max}` : min || max);
-    }
-    return parts.join(" · ") || "All listings";
-  }
-
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8">
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-2">
         <Bell className="h-6 w-6 text-olive" />
         <h1
           className="text-2xl font-bold text-navy"
           style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
         >
-          Saved Searches
+          Want to Buy
         </h1>
       </div>
       <p className="text-sm text-muted-foreground mb-6">
-        Get notified when new listings match your saved searches.
+        Add items you&apos;re looking for. You&apos;ll get an email + in-app notification the moment a matching listing is posted.
       </p>
+
+      <AddWatchlistItem />
 
       {(searches ?? []).length === 0 ? (
         <div className="rounded-xl border border-border py-16 text-center">
           <Search className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-sm font-medium text-muted-foreground">No saved searches yet</p>
-          <Link href="/listings" className="text-sm text-olive hover:underline mt-2 inline-block">
-            Browse listings and save a search
-          </Link>
+          <p className="text-sm font-medium text-muted-foreground">No items on your watchlist yet</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Type something above — like &quot;Flex-On stirrups&quot; or &quot;Stockholm dressage pad&quot;
+          </p>
         </div>
       ) : (
         <div className="rounded-xl border border-border overflow-hidden divide-y divide-border">
           {(searches as any[]).map((s) => (
             <div key={s.id} className="flex items-center gap-4 px-5 py-4 bg-white">
+              <Bell className="h-4 w-4 text-olive flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <Link href={searchUrl(s)} className="text-sm font-medium text-navy hover:underline">
                   {s.name}
                 </Link>
-                <p className="text-xs text-muted-foreground mt-0.5">{describeSearch(s)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Watching for new listings · email &amp; in-app alerts
+                </p>
               </div>
               <DeleteSavedSearchButton id={s.id} />
             </div>

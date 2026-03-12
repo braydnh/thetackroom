@@ -4,6 +4,7 @@ import { FilterSidebar } from "@/components/listings/FilterSidebar";
 import { MobileFilterSheet } from "@/components/listings/MobileFilterSheet";
 import { SortSelect } from "@/components/listings/SortSelect";
 import { ListingGrid } from "@/components/listings/ListingGrid";
+import { ListingsSearchBar } from "@/components/listings/ListingsSearchBar";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { FeaturedListings } from "@/components/listings/FeaturedListings";
@@ -98,6 +99,15 @@ export default async function ListingsPage({
               );
             })}
           </div>
+        </div>
+      </div>
+
+      {/* Search bar */}
+      <div className="border-b border-border bg-white/80 backdrop-blur-sm">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-3">
+          <Suspense>
+            <ListingsSearchBar defaultValue={params.q} />
+          </Suspense>
         </div>
       </div>
 

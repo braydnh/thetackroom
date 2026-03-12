@@ -416,7 +416,7 @@ export function Navbar({ user, unreadMessages = 0, unreadNotifications = 0 }: Na
                       Favourites
                     </Link>
                     <Link href="/saved-searches" className="block rounded-md px-4 py-3 text-sm font-medium text-cream hover:bg-olive-light" onClick={() => setMobileOpen(false)}>
-                      Saved Searches
+                      Want to Buy
                     </Link>
                     <Link href="/settings" className="block rounded-md px-4 py-3 text-sm font-medium text-cream hover:bg-olive-light" onClick={() => setMobileOpen(false)}>
                       Settings
@@ -546,7 +546,7 @@ export function Navbar({ user, unreadMessages = 0, unreadNotifications = 0 }: Na
                     <Link href="/selling">Selling</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/saved-searches">Saved Searches</Link>
+                    <Link href="/saved-searches">Want to Buy</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>

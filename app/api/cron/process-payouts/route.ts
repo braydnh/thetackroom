@@ -30,6 +30,7 @@ import {
   trackingReminderEmail,
   itemDeliveredSellerEmail,
   itemDeliveredBuyerEmail,
+  savedSearchMatchEmail,
 } from "@/lib/emails";
 import { formatAUD } from "@/lib/utils/currency";
 import { poll17TrackStatus } from "@/lib/17track";
@@ -496,17 +497,38 @@ export async function GET(req: Request) {
 
       if (!matches || matches.length === 0) continue;
 
-      // Send in-app notification
+      // Build link back to the matching listings
+      const searchUrl = `/listings${search.query ? `?q=${encodeURIComponent(search.query)}` : search.category ? `?category=${search.category}` : ""}`;
       const listingWord = matches.length === 1 ? "listing" : "listings";
+
+      // In-app notification
       await admin.from("notifications").insert({
         user_id: search.user_id,
         type: "saved_search_match",
         title: `New ${listingWord} match "${search.name}"`,
         body: matches.length === 1
           ? `"${matches[0].title}" was just listed.`
-          : `${matches.length} new ${listingWord} match your saved search.`,
-        link: `/listings${search.query ? `?q=${encodeURIComponent(search.query)}` : search.category ? `?category=${search.category}` : ""}`,
+          : `${matches.length} new ${listingWord} match your watchlist.`,
+        link: searchUrl,
       });
+
+      // Email notification
+      try {
+        const { data: { user: authUser } } = await admin.auth.admin.getUserById(search.user_id);
+        if (authUser?.email) {
+          await sendEmail({
+            to: authUser.email,
+            subject: `New ${listingWord} match "${search.name}" on The Tack Room`,
+            html: savedSearchMatchEmail({
+              watchName: search.name,
+              matches: matches.map((m: any) => ({ id: m.id, title: m.title, price: m.price })),
+              searchUrl,
+            }),
+          });
+        }
+      } catch (emailErr: any) {
+        console.error(`Saved search email failed for ${search.id}:`, emailErr.message);
+      }
 
       results.push({ order_id: `saved_search:${search.id}`, status: "ok", detail: `${matches.length} matches` });
     } catch (err: any) {

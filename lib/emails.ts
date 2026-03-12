@@ -844,3 +844,44 @@ export function payoutFailedSellerEmail({
     </div>
   `);
 }
+
+export function savedSearchMatchEmail({
+  watchName,
+  matches,
+  searchUrl,
+}: {
+  watchName: string;
+  matches: { title: string; price: number; id: string }[];
+  searchUrl: string;
+}) {
+  const listingRows = matches.map((m) =>
+    `<tr>
+      <td style="padding:10px 0;border-bottom:1px solid #f0ede8">
+        <a href="https://tackroomshop.com.au/listings/${m.id}" style="font-size:14px;font-weight:600;color:#1a2744;text-decoration:none">${m.title}</a>
+        <span style="font-size:13px;color:#4a5e35;font-weight:600;margin-left:10px">$${(m.price / 100).toFixed(0)}</span>
+      </td>
+    </tr>`
+  ).join("");
+
+  const countText = matches.length === 1
+    ? `1 new listing matches`
+    : `${matches.length} new listings match`;
+
+  return wrapper(`
+    <div style="background:#4a5e35;border-radius:6px;padding:14px 20px;margin-bottom:24px">
+      <p style="margin:0;font-size:14px;font-weight:700;color:#ffffff">New match for your watchlist</p>
+    </div>
+    <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
+      ${countText} "${watchName}"
+    </h1>
+    <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
+      Something you're watching just got listed on The Tack Room.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px">
+      ${listingRows}
+    </table>
+    <div style="text-align:center">
+      ${btn("View listings", `https://tackroomshop.com.au${searchUrl}`)}
+    </div>
+  `);
+}
