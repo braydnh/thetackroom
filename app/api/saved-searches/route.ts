@@ -54,19 +54,15 @@ export async function POST(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Check for existing matching listings using ilike for reliability
+  // Check for existing matching listings using full-text search (same as search bar + cron)
   let existingCount = 0;
   let existingMatches: { id: string; title: string; price: number }[] = [];
   if (query) {
-    const words = query.trim().split(/\s+/).filter(Boolean);
     let q = (supabase as any)
       .from("listings")
       .select("id, title, price")
-      .eq("status", "active");
-
-    // Match any word in title (case-insensitive)
-    const orFilter = words.map((w: string) => `title.ilike.%${w}%`).join(",");
-    q = q.or(orFilter);
+      .eq("status", "active")
+      .textSearch("search_vector", query.trim(), { type: "websearch" });
 
     if (category) q = q.eq("category", category);
     const { data: matches } = await q.limit(5);

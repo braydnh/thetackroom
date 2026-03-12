@@ -9,7 +9,8 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/resend";
-import { savedSearchMatchEmail } from "@/lib/emails";
+import { savedSearchMatchEmail, itemDeliveredSellerEmail, itemDeliveredBuyerEmail } from "@/lib/emails";
+import { poll17TrackStatus } from "@/lib/17track";
 
 export const maxDuration = 60;
 
@@ -93,6 +94,89 @@ export async function GET(req: Request) {
     } catch (err: any) {
       console.error(`Saved search ${search.id} failed:`, err.message);
       results.push({ id: search.id, status: "error", detail: err.message });
+    }
+  }
+
+  // ── Hourly delivery poll: check 17track for shipped orders awaiting webhook ──
+  const H = 60 * 60 * 1000;
+  const nowMs = Date.now();
+  const { data: shippedOrders } = await admin
+    .from("orders")
+    .select("id, seller_id, buyer_id, tracking_number, listing_id, listings(title)")
+    .eq("status", "shipped")
+    .eq("pickup_method", "shipping")
+    .not("tracking_number", "is", null)
+    .limit(40);
+
+  if (shippedOrders && shippedOrders.length > 0) {
+    const trackingNumbers = (shippedOrders as any[]).map((o) => o.tracking_number as string);
+    const statusMap = await poll17TrackStatus(trackingNumbers);
+
+    for (const order of shippedOrders as any[]) {
+      const tag = statusMap.get(order.tracking_number);
+      if (tag !== "Delivered") continue;
+
+      const disputeWindowEndsAt = new Date(nowMs + 48 * H).toISOString();
+
+      try {
+        await admin
+          .from("orders")
+          .update({ status: "dispute_window", dispute_window_ends_at: disputeWindowEndsAt })
+          .eq("id", order.id);
+
+        console.log(`Order ${order.id} → dispute_window via hourly delivery poll.`);
+
+        const listingTitle = (order.listings as any)?.title ?? "Your item";
+
+        const [{ data: sellerProfile }, sellerAuth, { data: buyerProfile }, buyerAuth] = await Promise.all([
+          admin.from("profiles").select("display_name, username").eq("id", order.seller_id).single(),
+          admin.auth.admin.getUserById(order.seller_id),
+          admin.from("profiles").select("display_name, username").eq("id", order.buyer_id).single(),
+          admin.auth.admin.getUserById(order.buyer_id),
+        ]);
+
+        const sellerName = sellerProfile?.display_name ?? sellerProfile?.username ?? "there";
+        const buyerName = buyerProfile?.display_name ?? buyerProfile?.username ?? "there";
+        const sellerEmail = (sellerAuth as any).data?.user?.email;
+        const buyerEmail = (buyerAuth as any).data?.user?.email;
+
+        if (sellerEmail) {
+          await sendEmail({
+            to: sellerEmail,
+            subject: `Your item has been delivered — ${listingTitle}`,
+            html: itemDeliveredSellerEmail({ sellerName, listingTitle, orderId: order.id }),
+          });
+        }
+        if (buyerEmail) {
+          await sendEmail({
+            to: buyerEmail,
+            subject: `Your item has been delivered — ${listingTitle}`,
+            html: itemDeliveredBuyerEmail({ buyerName, listingTitle, disputeWindowEndsAt, orderId: order.id }),
+          });
+        }
+
+        await admin.from("notifications").insert([
+          {
+            user_id: order.seller_id,
+            type: "item_delivered",
+            title: "Your item has been delivered!",
+            body: `${listingTitle} was delivered. Your payout will be released shortly.`,
+            link: `/orders/${order.id}`,
+          },
+          {
+            user_id: order.buyer_id,
+            type: "dispute_window",
+            title: "Your item has been delivered!",
+            body: `You have 48 hours to raise a dispute for "${listingTitle}". After that, the seller will be paid out.`,
+            link: `/orders/${order.id}`,
+          },
+        ]);
+
+        results.push({ id: order.id, status: "ok", detail: "delivery_poll" });
+      } catch (err: any) {
+        console.error(`Hourly delivery poll failed for order ${order.id}:`, err.message);
+        results.push({ id: order.id, status: "error", detail: `delivery_poll: ${err.message}` });
+      }
     }
   }
 
