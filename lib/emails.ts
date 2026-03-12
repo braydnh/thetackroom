@@ -868,7 +868,7 @@ export function savedSearchMatchEmail({
     : `${matches.length} new listings match`;
 
   return wrapper(`
-    <div style="background:#4a5e35;border-radius:6px;padding:14px 20px;margin-bottom:24px">
+    <div style="background:#1a2744;border-radius:6px;padding:14px 20px;margin-bottom:24px">
       <p style="margin:0;font-size:14px;font-weight:700;color:#ffffff">New match for your watchlist</p>
     </div>
     <h1 style="margin:0 0 8px;font-family:Georgia,serif;font-size:24px;font-weight:700;color:#1a2744">
