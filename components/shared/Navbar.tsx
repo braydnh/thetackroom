@@ -405,11 +405,17 @@ export function Navbar({ user, unreadMessages = 0, unreadNotifications = 0 }: Na
                     <Link href="/orders" className="block rounded-md px-4 py-3 text-sm font-medium text-cream hover:bg-olive-light" onClick={() => setMobileOpen(false)}>
                       My Orders
                     </Link>
+                    <Link href="/sales" className="block rounded-md px-4 py-3 text-sm font-medium text-cream hover:bg-olive-light" onClick={() => setMobileOpen(false)}>
+                      My Sales
+                    </Link>
                     <Link href="/messages" className="block rounded-md px-4 py-3 text-sm font-medium text-cream hover:bg-olive-light" onClick={() => setMobileOpen(false)}>
                       Messages
                     </Link>
                     <Link href="/favourites" className="block rounded-md px-4 py-3 text-sm font-medium text-cream hover:bg-olive-light" onClick={() => setMobileOpen(false)}>
                       Favourites
+                    </Link>
+                    <Link href="/saved-searches" className="block rounded-md px-4 py-3 text-sm font-medium text-cream hover:bg-olive-light" onClick={() => setMobileOpen(false)}>
+                      Saved Searches
                     </Link>
                     <Link href="/settings" className="block rounded-md px-4 py-3 text-sm font-medium text-cream hover:bg-olive-light" onClick={() => setMobileOpen(false)}>
                       Settings
@@ -533,7 +539,13 @@ export function Navbar({ user, unreadMessages = 0, unreadNotifications = 0 }: Na
                     <Link href="/orders">My Orders</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
+                    <Link href="/sales">My Sales</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link href="/selling">Selling</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/saved-searches">Saved Searches</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>

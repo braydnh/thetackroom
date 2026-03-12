@@ -461,6 +461,59 @@ export async function GET(req: Request) {
     }
   }
 
+  // ── Saved search notifications ──
+  // For each saved search, find listings posted since last_notified_at and notify the user
+  const { data: savedSearches } = await admin
+    .from("saved_searches")
+    .select("id, user_id, name, query, category, subcategory, condition, min_price, max_price, last_notified_at")
+    .not("last_notified_at", "is", null)
+    .order("last_notified_at", { ascending: true })
+    .limit(50);
+
+  for (const search of (savedSearches ?? []) as any[]) {
+    try {
+      let q = admin
+        .from("listings")
+        .select("id, title, price")
+        .eq("status", "active")
+        .gt("created_at", search.last_notified_at)
+        .limit(5);
+
+      if (search.query) q = (q as any).textSearch("search_vector", search.query, { type: "websearch" });
+      if (search.category) q = (q as any).eq("category", search.category);
+      if (search.subcategory?.length) q = (q as any).in("subcategory", search.subcategory);
+      if (search.condition?.length) q = (q as any).in("condition", search.condition);
+      if (search.min_price) q = (q as any).gte("price", search.min_price);
+      if (search.max_price) q = (q as any).lte("price", search.max_price);
+
+      const { data: matches } = await (q as any);
+
+      // Always update last_notified_at so we don't re-check old listings next run
+      await admin
+        .from("saved_searches")
+        .update({ last_notified_at: now })
+        .eq("id", search.id);
+
+      if (!matches || matches.length === 0) continue;
+
+      // Send in-app notification
+      const listingWord = matches.length === 1 ? "listing" : "listings";
+      await admin.from("notifications").insert({
+        user_id: search.user_id,
+        type: "saved_search_match",
+        title: `New ${listingWord} match "${search.name}"`,
+        body: matches.length === 1
+          ? `"${matches[0].title}" was just listed.`
+          : `${matches.length} new ${listingWord} match your saved search.`,
+        link: `/listings${search.query ? `?q=${encodeURIComponent(search.query)}` : search.category ? `?category=${search.category}` : ""}`,
+      });
+
+      results.push({ order_id: `saved_search:${search.id}`, status: "ok", detail: `${matches.length} matches` });
+    } catch (err: any) {
+      console.error(`Saved search ${search.id} notification failed:`, err.message);
+    }
+  }
+
   return NextResponse.json({
     processed: results.length,
     results,

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { formatAUD } from "@/lib/utils/currency";
-import { Package, ChevronRight } from "lucide-react";
+import { ShoppingBag, ChevronRight } from "lucide-react";
 
 const STATUS_LABEL: Record<string, string> = {
   pending_payment:   "Pending payment",
@@ -32,18 +32,18 @@ const STATUS_COLOR: Record<string, string> = {
   cancelled:         "bg-muted text-muted-foreground",
 };
 
-export default async function OrdersPage() {
+export default async function SalesPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login?next=/orders");
+  if (!user) redirect("/login?next=/sales");
 
   const admin = createAdminClient();
 
-  // Purchases only (user is buyer)
+  // Sales only (user is seller)
   const { data: orders } = await admin
     .from("orders")
     .select("id, status, subtotal, shipping_amount, pickup_method, created_at, listing_id, buyer_id, seller_id")
-    .eq("buyer_id", user.id)
+    .eq("seller_id", user.id)
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -65,22 +65,22 @@ export default async function OrdersPage() {
           className="text-2xl font-bold text-navy"
           style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
         >
-          My Orders
+          My Sales
         </h1>
         <Link
-          href="/sales"
+          href="/orders"
           className="ml-auto text-sm text-olive hover:underline"
         >
-          My Sales →
+          ← My Orders
         </Link>
       </div>
 
       {(orders ?? []).length === 0 ? (
         <div className="rounded-xl border border-border py-16 text-center">
-          <Package className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-sm font-medium text-muted-foreground">No purchases yet</p>
-          <Link href="/listings" className="text-sm text-olive hover:underline mt-2 inline-block">
-            Browse listings
+          <ShoppingBag className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+          <p className="text-sm font-medium text-muted-foreground">No sales yet</p>
+          <Link href="/selling/listings/new" className="text-sm text-olive hover:underline mt-2 inline-block">
+            List an item
           </Link>
         </div>
       ) : (

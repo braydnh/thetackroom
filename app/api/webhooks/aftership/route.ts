@@ -145,6 +145,7 @@ export async function POST(req: Request) {
       body: `You have 48 hours to raise a dispute for "${listingTitle}". After that, the seller will be paid out.`,
       link: `/orders/${order.id}`,
     });
+
   } catch (err) {
     console.error("Delivery email/notification failed:", err);
   }

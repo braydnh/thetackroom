@@ -7,6 +7,7 @@ import { ListingGrid } from "@/components/listings/ListingGrid";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { FeaturedListings } from "@/components/listings/FeaturedListings";
+import { SaveSearchButton } from "@/components/listings/SaveSearchButton";
 import type { ListingCardData } from "@/components/listings/ListingCard";
 import type { ListingCondition, ListingCategory } from "@/types/database.types";
 import { expandSubValues } from "@/lib/categories";
@@ -111,6 +112,18 @@ export default async function ListingsPage({
             {buildTitle(params)}
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">Pre-loved equestrian gear</p>
+          {(params.q || params.category || params.condition || params.min || params.max) && (
+            <div className="mt-2">
+              <SaveSearchButton
+                query={params.q}
+                category={params.category}
+                sub={params.sub}
+                condition={params.condition}
+                min={params.min}
+                max={params.max}
+              />
+            </div>
+          )}
         </div>
         {/* Sort */}
         <div className="hidden sm:flex items-center gap-2">
@@ -223,14 +236,16 @@ async function ListingsContent({ params, excludeIds = [] }: { params: SearchPara
   const page = Math.max(1, parseInt(params.page ?? "1", 10));
   const offset = (page - 1) * PAGE_SIZE;
 
-  // Fetch PAGE_SIZE + 1 to detect if a next page exists — avoids a second DB query
-  const { data: rows } = await buildQuery(supabase, params, excludeIds).range(offset, offset + PAGE_SIZE);
+  const [{ data: rows }, { count }] = await Promise.all([
+    buildQuery(supabase, params, excludeIds).range(offset, offset + PAGE_SIZE - 1),
+    buildQuery(supabase, params, excludeIds).select("id", { count: "exact", head: true }),
+  ]);
 
-  const hasNext = (rows?.length ?? 0) > PAGE_SIZE;
+  const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
   const hasPrev = page > 1;
-  const visibleRows = (rows ?? []).slice(0, PAGE_SIZE);
+  const hasNext = page < totalPages;
 
-  const listings: ListingCardData[] = visibleRows.map((r: any) => {
+  const listings: ListingCardData[] = (rows ?? []).map((r: any) => {
     const seller = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
     return {
       id: r.id,
@@ -248,6 +263,19 @@ async function ListingsContent({ params, excludeIds = [] }: { params: SearchPara
     };
   });
 
+  // Build page number range: show up to 5 pages centred around current
+  function getPageNums(current: number, total: number): (number | "…")[] {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: (number | "…")[] = [1];
+    const lo = Math.max(2, current - 2);
+    const hi = Math.min(total - 1, current + 2);
+    if (lo > 2) pages.push("…");
+    for (let i = lo; i <= hi; i++) pages.push(i);
+    if (hi < total - 1) pages.push("…");
+    pages.push(total);
+    return pages;
+  }
+
   return (
     <>
       <ListingGrid
@@ -258,25 +286,41 @@ async function ListingsContent({ params, excludeIds = [] }: { params: SearchPara
             : "No listings yet — be the first to list your gear!"
         }
       />
-      {(hasNext || hasPrev) && (
-        <div className="flex items-center justify-between mt-10 gap-4">
-          {hasPrev ? (
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-1 mt-10 flex-wrap">
+          {hasPrev && (
             <Link
               href={buildPageUrl(params, page - 1)}
-              className="rounded-full border border-border px-5 py-2 text-sm font-medium text-navy hover:bg-olive hover:text-cream hover:border-olive transition-colors"
+              className="rounded-full border border-border px-4 py-2 text-sm font-medium text-navy hover:bg-olive hover:text-cream hover:border-olive transition-colors"
             >
-              ← Previous
+              ←
             </Link>
-          ) : <div />}
-          <span className="text-sm text-muted-foreground">Page {page}</span>
-          {hasNext ? (
+          )}
+          {getPageNums(page, totalPages).map((p, i) =>
+            p === "…" ? (
+              <span key={`ellipsis-${i}`} className="px-2 py-2 text-sm text-muted-foreground">…</span>
+            ) : (
+              <Link
+                key={p}
+                href={buildPageUrl(params, p as number)}
+                className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+                  p === page
+                    ? "bg-olive text-cream border-olive"
+                    : "border-border text-navy hover:bg-olive hover:text-cream hover:border-olive"
+                }`}
+              >
+                {p}
+              </Link>
+            )
+          )}
+          {hasNext && (
             <Link
               href={buildPageUrl(params, page + 1)}
-              className="rounded-full border border-border px-5 py-2 text-sm font-medium text-navy hover:bg-olive hover:text-cream hover:border-olive transition-colors"
+              className="rounded-full border border-border px-4 py-2 text-sm font-medium text-navy hover:bg-olive hover:text-cream hover:border-olive transition-colors"
             >
-              Next →
+              →
             </Link>
-          ) : <div />}
+          )}
         </div>
       )}
     </>

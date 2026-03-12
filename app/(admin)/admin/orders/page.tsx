@@ -22,9 +22,9 @@ const STATUS_COLOR: Record<string, string> = {
 export default async function AdminOrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; page?: string }>;
+  searchParams: Promise<{ status?: string; page?: string; q?: string }>;
 }) {
-  const { status = "all", page = "1" } = await searchParams;
+  const { status = "all", page = "1", q = "" } = await searchParams;
   const pageNum = Math.max(1, parseInt(page, 10));
   const pageSize = 30;
   const offset = (pageNum - 1) * pageSize;
@@ -41,9 +41,25 @@ export default async function AdminOrdersPage({
     query = (query as any).eq("status", status);
   }
 
+  if (q.trim()) {
+    query = (query as any).ilike("id", `${q.trim()}%`);
+  }
+
   const { data: orders } = await (query as any);
 
   const STATUSES = ["all", "pending_payment", "disputed", "awaiting_shipment", "shipped", "dispute_window", "completed", "refunded"];
+
+  function tabUrl(s: string) {
+    const p = new URLSearchParams({ status: s });
+    if (q) p.set("q", q);
+    return `/admin/orders?${p}`;
+  }
+
+  function pageUrl(p: number) {
+    const params = new URLSearchParams({ status, page: String(p) });
+    if (q) params.set("q", q);
+    return `/admin/orders?${params}`;
+  }
 
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
@@ -51,12 +67,25 @@ export default async function AdminOrdersPage({
         Orders
       </h1>
 
+      {/* Search */}
+      <form method="GET" action="/admin/orders" className="mb-4">
+        <input type="hidden" name="status" value={status} />
+        <input
+          name="q"
+          defaultValue={q}
+          type="search"
+          placeholder="Search by order ID…"
+          className="w-full max-w-sm rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-olive/30"
+          autoComplete="off"
+        />
+      </form>
+
       {/* Status filter */}
       <div className="flex gap-1 flex-wrap mb-6">
         {STATUSES.map((s) => (
           <Link
             key={s}
-            href={`/admin/orders?status=${s}`}
+            href={tabUrl(s)}
             className={`rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors ${
               status === s ? "bg-olive text-cream" : "bg-muted text-muted-foreground hover:bg-muted/80"
             }`}
@@ -114,10 +143,10 @@ export default async function AdminOrdersPage({
 
       <div className="flex justify-between mt-6">
         {pageNum > 1 && (
-          <Link href={`/admin/orders?status=${status}&page=${pageNum - 1}`} className="text-sm text-olive hover:underline">← Previous</Link>
+          <Link href={pageUrl(pageNum - 1)} className="text-sm text-olive hover:underline">← Previous</Link>
         )}
         {(orders ?? []).length === pageSize && (
-          <Link href={`/admin/orders?status=${status}&page=${pageNum + 1}`} className="text-sm text-olive hover:underline ml-auto">Next →</Link>
+          <Link href={pageUrl(pageNum + 1)} className="text-sm text-olive hover:underline ml-auto">Next →</Link>
         )}
       </div>
     </div>

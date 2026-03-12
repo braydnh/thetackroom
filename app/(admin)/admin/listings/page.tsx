@@ -17,16 +17,16 @@ const STATUS_COLOR: Record<string, string> = {
 export default async function AdminListingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; page?: string }>;
+  searchParams: Promise<{ status?: string; page?: string; q?: string }>;
 }) {
-  const { status = "active", page = "1" } = await searchParams;
+  const { status = "active", page = "1", q = "" } = await searchParams;
   const pageNum = Math.max(1, parseInt(page, 10));
   const pageSize = 30;
   const offset = (pageNum - 1) * pageSize;
 
   const admin = createAdminClient();
 
-  const query = admin
+  let query = admin
     .from("listings")
     .select("id, title, price, status, created_at, seller_id, primary_image_url, profiles!seller_id(username)")
     .order("created_at", { ascending: false })
@@ -34,6 +34,10 @@ export default async function AdminListingsPage({
 
   if (status !== "all") {
     (query as any).eq("status", status);
+  }
+
+  if (q.trim()) {
+    (query as any).or(`title.ilike.%${q.trim()}%,profiles.username.ilike.%${q.trim()}%`);
   }
 
   const { data: listings } = await (query as any);
@@ -54,6 +58,18 @@ export default async function AdminListingsPage({
 
   const STATUSES = ["active", "draft", "reserved", "sold", "suspended", "deleted", "all"];
 
+  function tabUrl(s: string) {
+    const p = new URLSearchParams({ status: s });
+    if (q) p.set("q", q);
+    return `/admin/listings?${p}`;
+  }
+
+  function pageUrl(p: number) {
+    const params = new URLSearchParams({ status, page: String(p) });
+    if (q) params.set("q", q);
+    return `/admin/listings?${params}`;
+  }
+
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8">
       <div className="flex items-center justify-between mb-6">
@@ -62,12 +78,25 @@ export default async function AdminListingsPage({
         </h1>
       </div>
 
+      {/* Search */}
+      <form method="GET" action="/admin/listings" className="mb-4">
+        <input type="hidden" name="status" value={status} />
+        <input
+          name="q"
+          defaultValue={q}
+          type="search"
+          placeholder="Search by title or seller username…"
+          className="w-full max-w-sm rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-olive/30"
+          autoComplete="off"
+        />
+      </form>
+
       {/* Status filter tabs */}
       <div className="flex gap-1 flex-wrap mb-6">
         {STATUSES.map((s) => (
           <Link
             key={s}
-            href={`/admin/listings?status=${s}`}
+            href={tabUrl(s)}
             className={`rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors ${
               status === s ? "bg-olive text-cream" : "bg-muted text-muted-foreground hover:bg-muted/80"
             }`}
@@ -124,14 +153,10 @@ export default async function AdminListingsPage({
       {/* Pagination */}
       <div className="flex justify-between mt-6">
         {pageNum > 1 && (
-          <Link href={`/admin/listings?status=${status}&page=${pageNum - 1}`} className="text-sm text-olive hover:underline">
-            ← Previous
-          </Link>
+          <Link href={pageUrl(pageNum - 1)} className="text-sm text-olive hover:underline">← Previous</Link>
         )}
         {(listings ?? []).length === pageSize && (
-          <Link href={`/admin/listings?status=${status}&page=${pageNum + 1}`} className="text-sm text-olive hover:underline ml-auto">
-            Next →
-          </Link>
+          <Link href={pageUrl(pageNum + 1)} className="text-sm text-olive hover:underline ml-auto">Next →</Link>
         )}
       </div>
     </div>
