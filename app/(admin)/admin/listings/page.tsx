@@ -33,11 +33,11 @@ export default async function AdminListingsPage({
     .range(offset, offset + pageSize - 1);
 
   if (status !== "all") {
-    (query as any).eq("status", status);
+    query = (query as any).eq("status", status);
   }
 
   if (q.trim()) {
-    (query as any).or(`title.ilike.%${q.trim()}%,profiles.username.ilike.%${q.trim()}%`);
+    query = (query as any).ilike("title", `%${q.trim()}%`);
   }
 
   const { data: listings } = await (query as any);
