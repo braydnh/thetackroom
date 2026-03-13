@@ -10,10 +10,10 @@ export function SuspendListingButton({ listingId, currentStatus }: { listingId: 
   const [loading, setLoading] = useState(false);
 
   const isSuspended = status === "suspended";
+  const isDeleted = status === "deleted";
 
-  async function handleToggle() {
+  async function updateStatus(newStatus: string) {
     setLoading(true);
-    const newStatus = isSuspended ? "active" : "suspended";
     const res = await fetch(`/api/admin/listings/${listingId}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -24,22 +24,45 @@ export function SuspendListingButton({ listingId, currentStatus }: { listingId: 
       toast.error(data.error ?? "Failed to update listing");
     } else {
       setStatus(newStatus);
-      toast.success(isSuspended ? "Listing restored" : "Listing suspended");
     }
     setLoading(false);
   }
 
-  if (status === "deleted" || status === "sold") return null;
+  async function handleSuspendToggle() {
+    const newStatus = isSuspended ? "active" : "suspended";
+    await updateStatus(newStatus);
+    toast.success(isSuspended ? "Listing restored" : "Listing suspended");
+  }
+
+  async function handleDelete() {
+    if (!confirm("Permanently mark this listing as deleted?")) return;
+    await updateStatus("deleted");
+    toast.success("Listing deleted");
+  }
+
+  if (isDeleted) return null;
 
   return (
-    <Button
-      size="sm"
-      variant={isSuspended ? "outline" : "destructive"}
-      className={isSuspended ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50" : ""}
-      onClick={handleToggle}
-      disabled={loading}
-    >
-      {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : isSuspended ? "Restore" : "Suspend"}
-    </Button>
+    <div className="flex items-center gap-2">
+      {status !== "sold" && (
+        <Button
+          size="sm"
+          variant={isSuspended ? "outline" : "destructive"}
+          className={isSuspended ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50" : ""}
+          onClick={handleSuspendToggle}
+          disabled={loading}
+        >
+          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : isSuspended ? "Restore" : "Suspend"}
+        </Button>
+      )}
+      <Button
+        size="sm"
+        variant="destructive"
+        onClick={handleDelete}
+        disabled={loading}
+      >
+        {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Delete"}
+      </Button>
+    </div>
   );
 }
