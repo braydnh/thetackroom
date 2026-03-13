@@ -369,7 +369,7 @@ export function itemDeliveredBuyerEmail({
       If there's an issue with your order, you have until <strong>${deadline} AEDT</strong> to raise a dispute. After this window closes, the payment will be automatically released to the seller.
     </p>
     <p style="margin:16px 0 0;font-size:15px;color:#444;line-height:1.6">
-      If everything looks good, no action is needed — the seller will be paid out automatically.
+      If everything looks great, you can release the seller's funds early from your order page — or simply do nothing and they'll be paid out automatically when the window closes.
     </p>
     <div style="text-align:center">
       ${btn("View order", `https://tackroomshop.com.au/orders/${orderId}`)}

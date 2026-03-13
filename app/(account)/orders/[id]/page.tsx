@@ -140,6 +140,8 @@ export default function OrderDetailPage() {
   const [submittingDispute, setSubmittingDispute] = useState(false);
   const [disputeSubmitted, setDisputeSubmitted] = useState(false);
   const [contactingOtherParty, setContactingOtherParty] = useState(false);
+  const [releasingFunds, setReleasingFunds] = useState(false);
+  const [releaseConfirming, setReleaseConfirming] = useState(false);
 
   useEffect(() => {
     fetch(`/api/orders/${id}`)
@@ -256,6 +258,20 @@ export default function OrderDetailPage() {
       setReviewSubmitted(true);
     }
     setSubmittingReview(false);
+  }
+
+  async function handleReleaseFunds() {
+    setReleasingFunds(true);
+    const res = await fetch(`/api/orders/${id}/release-early`, { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) {
+      toast.error(data.error ?? "Failed to release funds");
+    } else {
+      toast.success("Funds released! The seller has been notified.");
+      setOrder((prev) => prev ? { ...prev, status: "completed" } : prev);
+      setReleaseConfirming(false);
+    }
+    setReleasingFunds(false);
   }
 
   async function handleContact() {
@@ -552,11 +568,60 @@ export default function OrderDetailPage() {
         <div className="rounded-xl border border-border p-4 flex items-start gap-3 mb-6">
           <Clock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-sm font-medium text-navy">Buyer dispute window</p>
+            <p className="text-sm font-medium text-navy">{order.is_seller ? "Buyer dispute window" : "Dispute window open"}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
               Payout releases automatically on {new Date(order.dispute_window_ends_at).toLocaleString("en-AU")}.
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Buyer: early release button */}
+      {order.status === "dispute_window" && !order.is_seller && !disputeSubmitted && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 mb-6">
+          <div className="flex items-start gap-3 mb-4">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-emerald-900">Happy with your order?</p>
+              <p className="text-xs text-emerald-700 mt-1">
+                If everything looks great, you can release the seller&apos;s funds now — no need to wait for the dispute window to close.
+              </p>
+            </div>
+          </div>
+          {!releaseConfirming ? (
+            <Button
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={() => setReleaseConfirming(true)}
+            >
+              Release funds now
+            </Button>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-emerald-800 font-medium text-center">
+                This can&apos;t be undone — are you sure?
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 border-emerald-300 text-emerald-800 hover:bg-emerald-100"
+                  onClick={() => setReleaseConfirming(false)}
+                  disabled={releasingFunds}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={handleReleaseFunds}
+                  disabled={releasingFunds}
+                >
+                  {releasingFunds
+                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Releasing…</>
+                    : "Yes, release funds"
+                  }
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
