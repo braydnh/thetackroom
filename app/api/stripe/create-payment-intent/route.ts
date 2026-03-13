@@ -19,7 +19,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01
 
 export async function POST(req: Request) {
   try {
-    const { listing_id, pickup_method = "shipping", shipping_address } = await req.json() as {
+    const { listing_id, pickup_method = "shipping", shipping_address, coupon_code } = await req.json() as {
       listing_id: string;
       pickup_method?: "shipping" | "local_pickup";
       shipping_address?: {
@@ -30,6 +30,7 @@ export async function POST(req: Request) {
         state: string;
         postcode: string;
       };
+      coupon_code?: string;
     };
 
     if (!listing_id) {
@@ -74,7 +75,31 @@ export async function POST(req: Request) {
       ? listing.shipping_price
       : 0;
     const subtotal = listing.price;
-    const totalAmount = subtotal + shippingAmount;
+
+    // Validate coupon server-side if provided
+    let discountAmount = 0;
+    let validatedCouponCode: string | null = null;
+    if (coupon_code?.trim()) {
+      const { data: coupon } = await admin
+        .from("coupon_codes")
+        .select("id, code, discount_type, discount_value, max_uses, uses_count, expires_at, is_active")
+        .filter("upper(code)", "eq", coupon_code.trim().toUpperCase())
+        .maybeSingle();
+
+      if (coupon && coupon.is_active &&
+          (!coupon.expires_at || new Date(coupon.expires_at) >= new Date()) &&
+          (coupon.max_uses === null || coupon.uses_count < coupon.max_uses)) {
+        if (coupon.discount_type === "percentage") {
+          discountAmount = Math.floor(subtotal * Number(coupon.discount_value) / 100);
+        } else {
+          discountAmount = Math.floor(Number(coupon.discount_value) * 100);
+        }
+        discountAmount = Math.min(discountAmount, subtotal);
+        validatedCouponCode = coupon.code;
+      }
+    }
+
+    const totalAmount = Math.max(subtotal + shippingAmount - discountAmount, 50); // Stripe minimum 50 cents
 
     // Fetch commission config values in parallel
     const [
@@ -106,7 +131,7 @@ export async function POST(req: Request) {
       commissionPct = standardCommissionPct;
     }
 
-    const { commission, sellerPayout } = calculateSellerPayout(subtotal, shippingAmount, commissionPct);
+    const { commission, sellerPayout } = calculateSellerPayout(subtotal - discountAmount, shippingAmount, commissionPct);
 
     // Reuse existing pending order if one already exists (prevents duplicates on back-navigation)
     const { data: existingOrder } = await admin
@@ -158,12 +183,23 @@ export async function POST(req: Request) {
           shipping_state: shipping_address.state,
           shipping_postcode: shipping_address.postcode,
         } : {}),
+        ...(validatedCouponCode ? {
+          coupon_code: validatedCouponCode,
+          discount_amount: discountAmount,
+        } : {}),
       })
       .select("id")
       .single();
 
     if (orderError || !order) {
       throw new Error(orderError?.message ?? "Failed to create order");
+    }
+
+    // Increment coupon uses_count now that the order is created
+    if (validatedCouponCode) {
+      await (admin.rpc as any)("increment_coupon_uses", { p_code: validatedCouponCode }).catch(() => {
+        console.warn("Failed to increment coupon uses_count for", validatedCouponCode);
+      });
     }
 
     // Create Stripe PaymentIntent — captured immediately to PLATFORM account
@@ -193,6 +229,7 @@ export async function POST(req: Request) {
       client_secret: paymentIntent.client_secret,
       order_id: order.id,
       amount: totalAmount,
+      discount_amount: discountAmount,
     });
   } catch (err: any) {
     console.error("create-payment-intent error:", err);

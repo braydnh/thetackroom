@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { formatAUD } from "@/lib/utils/currency";
-import { ShieldCheck, Truck, MapPin, Loader2, ChevronLeft } from "lucide-react";
+import { ShieldCheck, Truck, MapPin, Loader2, ChevronLeft, Tag, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { loadStripe } from "@stripe/stripe-js";
@@ -49,6 +49,10 @@ export default function CheckoutPage() {
   const [orderId, setOrderId] = useState<string | null>(null);
   const [loadingListing, setLoadingListing] = useState(true);
   const [creatingIntent, setCreatingIntent] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [couponApplied, setCouponApplied] = useState<{ code: string; discountAmount: number } | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
 
   // Load listing details
   useEffect(() => {
@@ -62,6 +66,26 @@ export default function CheckoutPage() {
     }
     load();
   }, [listing_id]);
+
+  const applyCoupon = useCallback(async () => {
+    if (!couponInput.trim() || !listing) return;
+    setCouponLoading(true);
+    setCouponError(null);
+    const res = await fetch(`/api/coupons/validate?code=${encodeURIComponent(couponInput.trim())}&subtotal=${listing.price}`);
+    const data = await res.json();
+    setCouponLoading(false);
+    if (data.valid) {
+      setCouponApplied({ code: data.code, discountAmount: data.discount_amount });
+      setCouponInput("");
+    } else {
+      setCouponError(data.error ?? "Invalid coupon code");
+    }
+  }, [couponInput, listing]);
+
+  const removeCoupon = () => {
+    setCouponApplied(null);
+    setCouponError(null);
+  };
 
   const addressValid = pickupMethod === "local_pickup" || (
     address.name.trim() !== "" &&
@@ -79,7 +103,12 @@ export default function CheckoutPage() {
     const res = await fetch("/api/stripe/create-payment-intent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ listing_id, pickup_method: method, shipping_address: method === "shipping" ? address : undefined }),
+      body: JSON.stringify({
+        listing_id,
+        pickup_method: method,
+        shipping_address: method === "shipping" ? address : undefined,
+        coupon_code: couponApplied?.code ?? undefined,
+      }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -117,7 +146,8 @@ export default function CheckoutPage() {
   }
 
   const shippingAmount = pickupMethod === "shipping" ? listing.shipping_price : 0;
-  const total = listing.price + shippingAmount;
+  const discount = couponApplied?.discountAmount ?? 0;
+  const total = Math.max(listing.price + shippingAmount - discount, 0);
 
   return (
     <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8">
@@ -204,6 +234,15 @@ export default function CheckoutPage() {
             <span>{listing.shipping_price === 0 ? "Free" : formatAUD(listing.shipping_price)}</span>
           </div>
         )}
+        {couponApplied && (
+          <div className="flex justify-between text-sm text-emerald-700">
+            <span className="flex items-center gap-1">
+              <Tag className="h-3 w-3" />
+              Coupon ({couponApplied.code})
+            </span>
+            <span>−{formatAUD(couponApplied.discountAmount)}</span>
+          </div>
+        )}
         <Separator />
         <div className="flex justify-between font-bold text-navy">
           <span>Total</span>
@@ -272,6 +311,52 @@ export default function CheckoutPage() {
           Payment is held securely by Stripe and only released to the seller after your item is delivered.
         </p>
       </div>
+
+      {/* Coupon code */}
+      {!clientSecret && (
+        <div className="mb-6">
+          {couponApplied ? (
+            <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+              <div className="flex items-center gap-2 text-sm text-emerald-700">
+                <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                <span><strong>{couponApplied.code}</strong> — {formatAUD(couponApplied.discountAmount)} off applied</span>
+              </div>
+              <button
+                type="button"
+                onClick={removeCoupon}
+                className="text-xs text-muted-foreground hover:text-navy transition-colors ml-3"
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Coupon code"
+                  value={couponInput}
+                  onChange={(e) => { setCouponInput(e.target.value); setCouponError(null); }}
+                  onKeyDown={(e) => e.key === "Enter" && applyCoupon()}
+                  className="flex-1 rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-olive/40 uppercase placeholder:normal-case"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={applyCoupon}
+                  disabled={couponLoading || !couponInput.trim()}
+                  className="shrink-0"
+                >
+                  {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                </Button>
+              </div>
+              {couponError && (
+                <p className="text-xs text-destructive">{couponError}</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Payment */}
       {!clientSecret ? (
