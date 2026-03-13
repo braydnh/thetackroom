@@ -406,7 +406,7 @@ export default function OrderDetailPage() {
         {order.tracking_deadline && order.status === "awaiting_shipment" && (
           <div className="flex items-center gap-1 text-xs text-amber-600">
             <Clock className="h-3 w-3" />
-            Ship by {new Date(order.tracking_deadline).toLocaleDateString("en-AU")}
+            Ship by {new Date(order.tracking_deadline).toLocaleDateString("en-AU", { timeZone: "Australia/Sydney" })}
           </div>
         )}
       </div>

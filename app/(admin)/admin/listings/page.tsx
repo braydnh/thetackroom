@@ -138,7 +138,7 @@ export default async function AdminListingsPage({
                   <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
                     <span>{formatAUD(listing.price)}</span>
                     <span>@{seller?.username ?? "—"}</span>
-                    <span>{new Date(listing.created_at).toLocaleDateString("en-AU")}</span>
+                    <span>{new Date(listing.created_at).toLocaleDateString("en-AU", { timeZone: "Australia/Sydney" })}</span>
                   </div>
                 </div>
 

@@ -112,7 +112,7 @@ export default async function AdminOverviewPage() {
                 <div className="text-right">
                   <p className="text-sm font-semibold text-navy">{formatAUD(order.subtotal + order.shipping_amount)}</p>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(order.created_at).toLocaleDateString("en-AU")}
+                    {new Date(order.created_at).toLocaleDateString("en-AU", { timeZone: "Australia/Sydney" })}
                   </p>
                 </div>
               </Link>

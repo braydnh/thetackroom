@@ -214,7 +214,7 @@ export function CouponManager({ initialCoupons }: Props) {
                     {c.uses_count}{c.max_uses !== null ? ` / ${c.max_uses}` : ""}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">
-                    {c.expires_at ? new Date(c.expires_at).toLocaleDateString("en-AU") : "Never"}
+                    {c.expires_at ? new Date(c.expires_at).toLocaleDateString("en-AU", { timeZone: "Australia/Sydney" }) : "Never"}
                   </td>
                   <td className="px-4 py-3">
                     <span className={cn(

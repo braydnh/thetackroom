@@ -75,7 +75,7 @@ export default async function AdminUsersPage({
                   <span>{u.total_sales} sales</span>
                   {Number(u.average_rating) > 0 && <span>⭐️ {Number(u.average_rating).toFixed(1)}</span>}
                   <span>{u.stripe_onboarding_complete ? "Seller" : "Buyer only"}</span>
-                  <span>Joined {new Date(u.created_at).toLocaleDateString("en-AU")}</span>
+                  <span>Joined {new Date(u.created_at).toLocaleDateString("en-AU", { timeZone: "Australia/Sydney" })}</span>
                 </div>
               </div>
 

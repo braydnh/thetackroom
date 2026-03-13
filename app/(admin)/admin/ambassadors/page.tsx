@@ -81,7 +81,7 @@ export default async function AdminAmbassadorsPage({
                       <p className="text-xs text-muted-foreground">@{p?.username}</p>
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">{new Date(app.created_at).toLocaleDateString("en-AU")}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(app.created_at).toLocaleDateString("en-AU", { timeZone: "Australia/Sydney" })}</p>
                 </div>
 
                 <div className="mt-4 text-sm text-muted-foreground leading-relaxed">

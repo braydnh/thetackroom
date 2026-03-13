@@ -125,7 +125,7 @@ export default async function OrdersPage() {
                   <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                     <span>{formatAUD(total)}</span>
                     <span>{order.pickup_method === "local_pickup" ? "Local pickup" : "Shipping"}</span>
-                    <span>{new Date(order.created_at).toLocaleDateString("en-AU")}</span>
+                    <span>{new Date(order.created_at).toLocaleDateString("en-AU", { timeZone: "Australia/Sydney" })}</span>
                   </div>
                 </div>
 

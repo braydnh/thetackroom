@@ -39,7 +39,7 @@ export default async function FoundingSellersPage() {
               <span className="text-navy font-mono">{row.email}</span>
               <span className={row.matched_at ? "text-emerald-600 text-xs" : "text-muted-foreground text-xs"}>
                 {row.matched_at
-                  ? `Matched ${new Date(row.matched_at).toLocaleDateString("en-AU")}`
+                  ? `Matched ${new Date(row.matched_at).toLocaleDateString("en-AU", { timeZone: "Australia/Sydney" })}`
                   : "Pending"}
               </span>
             </div>
