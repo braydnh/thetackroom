@@ -57,7 +57,8 @@ export async function GET(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const isSeller = isAdmin ? true : order.seller_id === user.id;
+  // Buyer view takes precedence — if the user is the buyer, show buyer view even if they're also admin
+  const isSeller = order.buyer_id === user.id ? false : (order.seller_id === user.id || isAdmin);
   const otherPartyId = isSeller ? order.buyer_id : order.seller_id;
 
   // Fetch listing info, other party username, and whether buyer has already reviewed
