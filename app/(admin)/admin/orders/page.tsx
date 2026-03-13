@@ -42,8 +42,13 @@ export default async function AdminOrdersPage({
   }
 
   if (q.trim()) {
-    // Exact UUID match OR partial tracking number match (ilike on UUID columns doesn't work)
-    query = (query as any).or(`id.eq.${q.trim()},tracking_number.ilike.%${q.trim()}%`);
+    const trimmed = q.trim();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed);
+    if (isUuid) {
+      query = (query as any).eq("id", trimmed);
+    } else {
+      query = (query as any).ilike("tracking_number", `%${trimmed}%`);
+    }
   }
 
   const { data: orders } = await (query as any);
