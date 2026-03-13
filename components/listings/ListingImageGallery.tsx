@@ -13,20 +13,22 @@ interface ListingImageGalleryProps {
 export function ListingImageGallery({ images, title }: ListingImageGalleryProps) {
   const [active, setActive] = useState(0);
   const [lightbox, setLightbox] = useState(false);
+  const [zoomed, setZoomed] = useState(false);
 
-  const prev = useCallback(() => setActive((a) => (a - 1 + images.length) % images.length), [images.length]);
-  const next = useCallback(() => setActive((a) => (a + 1) % images.length), [images.length]);
+  const prev = useCallback(() => { setActive((a) => (a - 1 + images.length) % images.length); setZoomed(false); }, [images.length]);
+  const next = useCallback(() => { setActive((a) => (a + 1) % images.length); setZoomed(false); }, [images.length]);
+  const closeLightbox = useCallback(() => { setLightbox(false); setZoomed(false); }, []);
 
   useEffect(() => {
     if (!lightbox) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setLightbox(false);
+      if (e.key === "Escape") closeLightbox();
       if (e.key === "ArrowLeft") prev();
       if (e.key === "ArrowRight") next();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [lightbox, prev, next]);
+  }, [lightbox, closeLightbox, prev, next]);
 
   if (images.length === 0) {
     return (
@@ -113,55 +115,63 @@ export function ListingImageGallery({ images, title }: ListingImageGalleryProps)
     {lightbox && (
       <div
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
-        onClick={() => setLightbox(false)}
+        onClick={closeLightbox}
       >
-        {/* Close */}
-        <button
-          className="absolute top-4 right-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition-colors"
-          onClick={() => setLightbox(false)}
-        >
-          <X className="h-5 w-5" />
-        </button>
-
-        {/* Image */}
+        {/* Image — z-0 so buttons layer above it */}
         <div
-          className="relative w-full h-full max-w-5xl max-h-[90vh] mx-4"
-          onClick={(e) => e.stopPropagation()}
+          className="relative w-full h-full max-w-5xl max-h-[90vh] mx-4 z-0 overflow-hidden"
+          onClick={(e) => { e.stopPropagation(); setZoomed((z) => !z); }}
         >
           <Image
             src={images[active]}
             alt={`${title} — image ${active + 1}`}
             fill
             sizes="100vw"
-            className="object-contain"
+            className={cn(
+              "object-contain transition-transform duration-200 select-none",
+              zoomed ? "scale-[2.5] cursor-zoom-out" : "cursor-zoom-in"
+            )}
             priority
           />
         </div>
 
+        {/* Close — z-10 ensures it renders above the image stacking context */}
+        <button
+          className="absolute top-4 right-4 z-10 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition-colors"
+          onClick={(e) => { e.stopPropagation(); closeLightbox(); }}
+        >
+          <X className="h-5 w-5" />
+        </button>
+
         {/* Arrows */}
-        {images.length > 1 && (
+        {images.length > 1 && !zoomed && (
           <>
             <button
               onClick={(e) => { e.stopPropagation(); prev(); }}
-              className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition-colors"
+              className="absolute left-4 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition-colors"
             >
               <ChevronLeft className="h-6 w-6" />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); next(); }}
-              className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition-colors"
+              className="absolute right-4 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition-colors"
             >
               <ChevronRight className="h-6 w-6" />
             </button>
           </>
         )}
 
-        {/* Counter */}
-        {images.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-xs text-white">
-            {active + 1} / {images.length}
-          </div>
-        )}
+        {/* Counter / zoom hint */}
+        <div className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 flex gap-2">
+          {images.length > 1 && (
+            <span className="rounded-full bg-black/50 px-3 py-1 text-xs text-white">
+              {active + 1} / {images.length}
+            </span>
+          )}
+          <span className="rounded-full bg-black/50 px-3 py-1 text-xs text-white">
+            {zoomed ? "Click to zoom out" : "Click to zoom in"}
+          </span>
+        </div>
       </div>
     )}
     </>
