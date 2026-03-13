@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
+import { ChevronLeft, ChevronRight, ZoomIn, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ListingImageGalleryProps {
@@ -12,6 +12,21 @@ interface ListingImageGalleryProps {
 
 export function ListingImageGallery({ images, title }: ListingImageGalleryProps) {
   const [active, setActive] = useState(0);
+  const [lightbox, setLightbox] = useState(false);
+
+  const prev = useCallback(() => setActive((a) => (a - 1 + images.length) % images.length), [images.length]);
+  const next = useCallback(() => setActive((a) => (a + 1) % images.length), [images.length]);
+
+  useEffect(() => {
+    if (!lightbox) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightbox(false);
+      if (e.key === "ArrowLeft") prev();
+      if (e.key === "ArrowRight") next();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [lightbox, prev, next]);
 
   if (images.length === 0) {
     return (
@@ -22,9 +37,13 @@ export function ListingImageGallery({ images, title }: ListingImageGalleryProps)
   }
 
   return (
+    <>
     <div className="space-y-3">
       {/* Main image */}
-      <div className="relative aspect-square rounded-xl overflow-hidden bg-muted group">
+      <div
+        className="relative aspect-square rounded-xl overflow-hidden bg-muted group cursor-zoom-in"
+        onClick={() => setLightbox(true)}
+      >
         <Image
           src={images[active]}
           alt={`${title} — image ${active + 1}`}
@@ -89,5 +108,62 @@ export function ListingImageGallery({ images, title }: ListingImageGalleryProps)
         </div>
       )}
     </div>
+
+    {/* Lightbox */}
+    {lightbox && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
+        onClick={() => setLightbox(false)}
+      >
+        {/* Close */}
+        <button
+          className="absolute top-4 right-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition-colors"
+          onClick={() => setLightbox(false)}
+        >
+          <X className="h-5 w-5" />
+        </button>
+
+        {/* Image */}
+        <div
+          className="relative w-full h-full max-w-5xl max-h-[90vh] mx-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Image
+            src={images[active]}
+            alt={`${title} — image ${active + 1}`}
+            fill
+            sizes="100vw"
+            className="object-contain"
+            priority
+          />
+        </div>
+
+        {/* Arrows */}
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={(e) => { e.stopPropagation(); prev(); }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition-colors"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); next(); }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition-colors"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          </>
+        )}
+
+        {/* Counter */}
+        {images.length > 1 && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-xs text-white">
+            {active + 1} / {images.length}
+          </div>
+        )}
+      </div>
+    )}
+    </>
   );
 }

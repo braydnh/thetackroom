@@ -14,6 +14,8 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Info, ChevronLeft, Trash2, AlertTriangle } from "lucide-react";
 import { CATEGORIES } from "@/lib/categories";
+import { ImageUpload, type UploadedImage } from "@/components/listings/ImageUpload";
+import { compressImage } from "@/lib/utils/images";
 
 const CONDITIONS = [
   { value: "new_with_tags", label: "New with tags", desc: "Unused, tags still attached" },
@@ -61,18 +63,23 @@ export default function EditListingForm({ listing, commissionPct = 5 }: { listin
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [images, setImages] = useState<UploadedImage[]>(
+    [...listing.listing_images]
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((img) => ({ id: img.id, preview: img.display_url, url: img.display_url }))
+  );
 
   const priceCents = Math.round(parseFloat(price || "0") * 100);
   const shippingCents = Math.round(parseFloat(shippingPrice || "0") * 100);
   const { commission, sellerPayout } = calculateSellerPayout(priceCents, shippingCents, commissionPct);
 
-  const images = [...listing.listing_images].sort((a, b) => a.sort_order - b.sort_order);
-
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim() || priceCents <= 0 || !category || !condition) {
       toast.error("Please fill in all required fields.");
-    } else if (allowsShipping && shippingPrice.trim() === "") {
+      return;
+    }
+    if (allowsShipping && shippingPrice.trim() === "") {
       toast.error("Please enter a shipping cost (enter 0 for free shipping).");
       return;
     }
@@ -83,6 +90,9 @@ export default function EditListingForm({ listing, commissionPct = 5 }: { listin
     setSaving(true);
     try {
       const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
       const { error } = await supabase
         .from("listings")
         .update({
@@ -102,6 +112,59 @@ export default function EditListingForm({ listing, commissionPct = 5 }: { listin
         .eq("id", listing.id);
 
       if (error) throw new Error(error.message);
+
+      // Sync images: delete existing rows, re-insert in current order
+      await supabase.from("listing_images").delete().eq("listing_id", listing.id);
+
+      const imageRows: {
+        listing_id: string;
+        storage_path: string;
+        display_url: string;
+        sort_order: number;
+        is_primary: boolean;
+      }[] = [];
+
+      for (let i = 0; i < images.length; i++) {
+        const img = images[i];
+        if (img.url) {
+          // Existing image — preserve as-is
+          imageRows.push({
+            listing_id: listing.id,
+            storage_path: img.url,
+            display_url: img.url,
+            sort_order: i,
+            is_primary: i === 0,
+          });
+        } else if (img.file) {
+          // New image — upload to storage
+          const compressed = await compressImage(img.file);
+          const ext = compressed.name.split(".").pop() ?? "jpg";
+          const path = `${user.id}/${listing.id}/${i}-${Date.now()}.${ext}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from("listing-images")
+            .upload(path, compressed, { contentType: compressed.type, upsert: false });
+
+          if (uploadError) throw new Error(`Image upload failed: ${uploadError.message}`);
+
+          const { data: { publicUrl } } = supabase.storage
+            .from("listing-images")
+            .getPublicUrl(path);
+
+          imageRows.push({
+            listing_id: listing.id,
+            storage_path: path,
+            display_url: publicUrl,
+            sort_order: i,
+            is_primary: i === 0,
+          });
+        }
+      }
+
+      if (imageRows.length > 0) {
+        const { error: imgError } = await supabase.from("listing_images").insert(imageRows);
+        if (imgError) throw new Error(imgError.message);
+      }
 
       toast.success("Listing updated!");
       router.push(`/listings/${listing.id}`);
@@ -190,24 +253,11 @@ export default function EditListingForm({ listing, commissionPct = 5 }: { listin
         </div>
       )}
 
-      {/* Current images (read-only — full image editing in Phase 8) */}
-      {images.length > 0 && (
-        <div className="mb-6">
-          <p className="text-sm font-medium text-navy mb-2">Photos</p>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {images.map((img, i) => (
-              <div key={img.id} className="relative h-20 w-20 flex-shrink-0 rounded-lg overflow-hidden bg-muted">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={img.display_url} alt="" className="h-full w-full object-cover" />
-                {img.is_primary && (
-                  <span className="absolute bottom-0.5 left-0.5 rounded text-[8px] bg-olive text-cream px-1">Cover</span>
-                )}
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">To change photos, contact support or relist.</p>
-        </div>
-      )}
+      {/* Photos */}
+      <div className="mb-6">
+        <p className="text-sm font-medium text-navy mb-2">Photos</p>
+        <ImageUpload images={images} onChange={setImages} disabled={saving} />
+      </div>
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Title */}
