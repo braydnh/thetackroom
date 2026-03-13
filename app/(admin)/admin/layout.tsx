@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Navbar } from "@/components/shared/Navbar";
-import { LayoutDashboard, Package, Users, ShoppingCart, Settings, Star } from "lucide-react";
+import { LayoutDashboard, Package, Users, ShoppingCart, Settings, Star, Tag } from "lucide-react";
 
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
@@ -11,6 +11,7 @@ const NAV = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/founding-sellers", label: "Founding Sellers", icon: Star },
   { href: "/admin/ambassadors", label: "Ambassadors", icon: Star },
+  { href: "/admin/coupons", label: "Coupons", icon: Tag },
   { href: "/admin/config", label: "Config", icon: Settings },
 ];
 
