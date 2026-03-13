@@ -131,7 +131,8 @@ export async function POST(req: Request) {
       commissionPct = standardCommissionPct;
     }
 
-    const { commission, sellerPayout } = calculateSellerPayout(subtotal - discountAmount, shippingAmount, commissionPct);
+    // Seller is always paid on the full price — platform absorbs the coupon discount
+    const { commission, sellerPayout } = calculateSellerPayout(subtotal, shippingAmount, commissionPct);
 
     // Reuse existing pending order if one already exists (prevents duplicates on back-navigation)
     const { data: existingOrder } = await admin
