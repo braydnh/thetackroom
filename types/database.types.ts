@@ -447,6 +447,8 @@ export type Database = {
           platform_commission_amt: number
           platform_commission_pct: number
           seller_id: string
+          coupon_code: string | null
+          discount_amount: number
           seller_notes: string | null
           seller_payout_amt: number
           shipping_amount: number
@@ -475,6 +477,8 @@ export type Database = {
           platform_commission_amt: number
           platform_commission_pct: number
           seller_id: string
+          coupon_code?: string | null
+          discount_amount?: number
           seller_notes?: string | null
           seller_payout_amt: number
           shipping_amount?: number
@@ -503,6 +507,8 @@ export type Database = {
           platform_commission_amt?: number
           platform_commission_pct?: number
           seller_id?: string
+          coupon_code?: string | null
+          discount_amount?: number
           seller_notes?: string | null
           seller_payout_amt?: number
           shipping_amount?: number
@@ -540,6 +546,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      coupon_codes: {
+        Row: {
+          id: string
+          code: string
+          discount_type: "percentage" | "fixed"
+          discount_value: number
+          max_uses: number | null
+          uses_count: number
+          expires_at: string | null
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          code: string
+          discount_type: "percentage" | "fixed"
+          discount_value: number
+          max_uses?: number | null
+          uses_count?: number
+          expires_at?: string | null
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          code?: string
+          discount_type?: "percentage" | "fixed"
+          discount_value?: number
+          max_uses?: number | null
+          uses_count?: number
+          expires_at?: string | null
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: []
       }
       platform_config: {
         Row: {
