@@ -42,8 +42,8 @@ export default async function AdminOrdersPage({
   }
 
   if (q.trim()) {
-    // Search by order ID prefix OR full tracking number
-    query = (query as any).or(`id.ilike.${q.trim()}%,tracking_number.ilike.%${q.trim()}%`);
+    // Exact UUID match OR partial tracking number match (ilike on UUID columns doesn't work)
+    query = (query as any).or(`id.eq.${q.trim()},tracking_number.ilike.%${q.trim()}%`);
   }
 
   const { data: orders } = await (query as any);
@@ -75,7 +75,7 @@ export default async function AdminOrdersPage({
           name="q"
           defaultValue={q}
           type="search"
-          placeholder="Search by order ID or tracking number…"
+          placeholder="Search by tracking number or full order ID…"
           className="w-full max-w-sm rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-olive/30"
           autoComplete="off"
         />
