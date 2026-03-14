@@ -117,7 +117,7 @@ export default async function AdminOrdersPage({
                 </div>
                 <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
                   <span>{formatAUD(order.subtotal + order.shipping_amount)}</span>
-                  <span>{new Date(order.created_at).toLocaleDateString("en-AU", { timeZone: "Australia/Sydney" })}</span>
+                  <span>{new Date(order.created_at).toLocaleString("en-AU", { timeZone: "Australia/Sydney", day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
                   {order.tracking_number && (
                     <span className="font-mono">{order.tracking_number}</span>
                   )}
