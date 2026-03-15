@@ -37,7 +37,7 @@ export default async function SellerDashboardPage({
   const [{ data: profile }, { data: listings }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("username, display_name, avatar_url, stripe_account_id, stripe_onboarding_complete, total_sales, average_rating, is_founding_seller")
+      .select("username, display_name, avatar_url, stripe_account_id, stripe_onboarding_complete, total_sales, average_rating, is_founding_seller, role")
       .eq("id", user.id)
       .single(),
     supabase
@@ -51,7 +51,8 @@ export default async function SellerDashboardPage({
 
   if (!profile) redirect("/settings?setup=1");
 
-  const isOnboarded = profile.stripe_onboarding_complete;
+  const isAdmin = (profile as any).role === "admin";
+  const isOnboarded = profile.stripe_onboarding_complete || isAdmin;
   const isPending = !isOnboarded && !!profile.stripe_account_id;
   const activeListings = (listings ?? []).filter((l: any) => l.status === "active");
   const soldListings   = (listings ?? []).filter((l: any) => l.status === "sold");
