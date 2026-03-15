@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/shared/Navbar";
 import { Footer } from "@/components/shared/Footer";
+import { ReportButton } from "@/components/shared/ReportButton";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +44,7 @@ export default async function MarketplaceLayout({
       <Navbar user={profile} unreadMessages={unreadMessages} unreadNotifications={unreadNotifications} />
       <main className="flex-1">{children}</main>
       <Footer />
+      <ReportButton />
     </div>
   );
 }

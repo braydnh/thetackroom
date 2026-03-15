@@ -1,7 +1,7 @@
 "use client";
 
-import { Metadata } from "next";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,30 +10,47 @@ import { toast } from "sonner";
 import { Loader2, Mail, Instagram, Facebook } from "lucide-react";
 
 export default function ContactPage() {
+  const searchParams = useSearchParams();
+  const isReport = searchParams.get("type") === "report";
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [subject, setSubject] = useState("");
+  const [subject, setSubject] = useState(isReport ? "Bug / Issue Report" : "");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
+  useEffect(() => {
+    if (isReport) setSubject("Bug / Issue Report");
+  }, [isReport]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    // Mailto fallback — replace with Resend API call when ready
-    const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`);
-    window.location.href = `mailto:contact@tackroomshop.com.au?subject=${encodeURIComponent(subject || "Enquiry from website")}&body=${body}`;
-    setSent(true);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, subject, message, type: isReport ? "report" : "contact" }),
+      });
+      if (!res.ok) throw new Error();
+      setSent(true);
+    } catch {
+      toast.error("Failed to send — please email us directly at contact@tackroomshop.com.au");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <div className="mx-auto max-w-2xl px-4 sm:px-6 py-12">
       <h1 className="text-3xl font-bold text-navy mb-2" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
-        Contact Us
+        {isReport ? "Report a Problem" : "Contact Us"}
       </h1>
       <p className="text-muted-foreground mb-8">
-        Got a question, issue, or just want to say hello? We&apos;d love to hear from you.
+        {isReport
+          ? "Found a bug or something not working right? Let us know and we'll get it fixed."
+          : "Got a question, issue, or just want to say hello? We'd love to hear from you."}
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
@@ -41,13 +58,12 @@ export default function ContactPage() {
         <div className="sm:col-span-2">
           {sent ? (
             <div className="rounded-xl border border-border p-8 text-center">
-              <p className="text-2xl mb-3">✉️</p>
-              <h2 className="font-semibold text-navy mb-1">Opening your email app</h2>
+              <p className="text-2xl mb-3">✅</p>
+              <h2 className="font-semibold text-navy mb-1">
+                {isReport ? "Report received" : "Message sent"}
+              </h2>
               <p className="text-sm text-muted-foreground">
-                If it didn&apos;t open, email us directly at{" "}
-                <a href="mailto:contact@tackroomshop.com.au" className="text-olive hover:underline">
-                  contact@tackroomshop.com.au
-                </a>
+                Thanks {name.split(" ")[0]}! We'll get back to you at {email} within 1 business day.
               </p>
             </div>
           ) : (
@@ -64,22 +80,22 @@ export default function ContactPage() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="subject">Subject</Label>
-                <Input id="subject" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="How can we help?" />
+                <Input id="subject" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={isReport ? "What's the issue?" : "How can we help?"} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="message">Message</Label>
+                <Label htmlFor="message">{isReport ? "Describe the problem" : "Message"}</Label>
                 <Textarea
                   id="message"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Tell us what&apos;s on your mind..."
+                  placeholder={isReport ? "What were you doing when it happened? What did you expect vs what occurred?" : "Tell us what's on your mind..."}
                   rows={5}
                   required
                 />
               </div>
               <Button type="submit" className="bg-olive hover:bg-olive-light text-cream" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Send message
+                {isReport ? "Submit report" : "Send message"}
               </Button>
             </form>
           )}
