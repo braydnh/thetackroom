@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Heart } from "lucide-react";
-import { ListingCard } from "@/components/listings/ListingCard";
+import { FavouritesGrid } from "./FavouritesGrid";
 
 export default async function FavouritesPage() {
   const supabase = await createClient();
@@ -40,9 +40,26 @@ export default async function FavouritesPage() {
 
   const { data: listings } = await admin
     .from("listings")
-    .select("id, title, price, condition, brand, allows_pickup, primary_image_url, profiles!seller_id(username, location)")
-    .in("id", listingIds)
-    .in("status", ["active", "reserved"]);
+    .select("id, title, price, condition, brand, allows_pickup, primary_image_url, status, profiles!seller_id(username, location)")
+    .in("id", listingIds);
+
+  const foundIds = new Set((listings ?? []).map((l: any) => l.id));
+  const missingIds = listingIds.filter((id) => !foundIds.has(id));
+
+  const gridListings = (listings as any[] ?? []).map((listing) => {
+    const profile = Array.isArray(listing.profiles) ? listing.profiles[0] : listing.profiles;
+    return {
+      id: listing.id,
+      title: listing.title,
+      price: listing.price,
+      condition: listing.condition,
+      brand: listing.brand,
+      allows_pickup: listing.allows_pickup,
+      primary_image: listing.primary_image_url ?? null,
+      seller_username: profile?.username ?? "seller",
+      status: listing.status,
+    };
+  });
 
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8">
@@ -50,26 +67,7 @@ export default async function FavouritesPage() {
         Favourites
       </h1>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        {(listings as any[] ?? []).map((listing) => {
-          const profile = Array.isArray(listing.profiles) ? listing.profiles[0] : listing.profiles;
-          return (
-            <ListingCard
-              key={listing.id}
-              listing={{
-                id: listing.id,
-                title: listing.title,
-                price: listing.price,
-                condition: listing.condition,
-                brand: listing.brand,
-                allows_pickup: listing.allows_pickup,
-                primary_image: listing.primary_image_url ?? null,
-                seller_username: profile?.username ?? "seller",
-              }}
-            />
-          );
-        })}
-      </div>
+      <FavouritesGrid listings={gridListings} missingIds={missingIds} />
     </div>
   );
 }
