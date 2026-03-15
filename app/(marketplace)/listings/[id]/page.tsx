@@ -16,6 +16,7 @@ import {
 import { ListingImageGallery } from "@/components/listings/ListingImageGallery";
 import { MessageSellerButton } from "@/components/listings/MessageSellerButton";
 import { FavouriteButton } from "@/components/listings/FavouriteButton";
+import { MakeOfferButton } from "@/components/listings/MakeOfferButton";
 import { createClient } from "@/lib/supabase/server";
 
 const CONDITION_LABELS: Record<string, string> = {
@@ -301,6 +302,14 @@ export default async function ListingDetailPage({
                   )}
                 </Link>
               </Button>
+              {seller && user?.id !== seller.id && (
+                <MakeOfferButton
+                  listingId={listing.id}
+                  sellerId={seller.id}
+                  listingPrice={listing.price}
+                  currentUserId={user?.id ?? null}
+                />
+              )}
               <div className="grid grid-cols-2 gap-3">
                 {seller && (
                   <MessageSellerButton sellerId={seller.id} listingId={listing.id} />

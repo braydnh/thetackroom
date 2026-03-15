@@ -53,15 +53,34 @@ export default function CheckoutPage() {
   const [couponApplied, setCouponApplied] = useState<{ code: string; discountAmount: number } | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState<string | null>(null);
+  const [offerId, setOfferId] = useState<string | null>(null);
+  const [offerPrice, setOfferPrice] = useState<number | null>(null);
 
-  // Load listing details
+  // Load listing details + read accepted offer from URL
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const offer = params.get("offer");
+    if (offer) setOfferId(offer);
+
     async function load() {
-      const res = await fetch(`/api/listings/${listing_id}`);
-      if (!res.ok) { setLoadingListing(false); return; }
-      const data = await res.json();
+      const [listingRes, offerRes] = await Promise.all([
+        fetch(`/api/listings/${listing_id}`),
+        offer ? fetch(`/api/listing-offers/${offer}`) : Promise.resolve(null),
+      ]);
+
+      if (!listingRes.ok) { setLoadingListing(false); return; }
+      const data = await listingRes.json();
       setListing(data);
       setPickupMethod(data.allows_shipping ? "shipping" : "local_pickup");
+
+      if (offerRes?.ok) {
+        const offerData = await offerRes.json().catch(() => ({}));
+        const o = offerData.offer;
+        if (o && (o.status === "accepted" || o.status === "counter_accepted") && o.accepted_price) {
+          setOfferPrice(o.accepted_price);
+        }
+      }
+
       setLoadingListing(false);
     }
     load();
@@ -108,6 +127,7 @@ export default function CheckoutPage() {
         pickup_method: method,
         shipping_address: method === "shipping" ? address : undefined,
         coupon_code: couponApplied?.code ?? undefined,
+        offer_id: offerId ?? undefined,
       }),
     });
     const data = await res.json();
@@ -145,9 +165,10 @@ export default function CheckoutPage() {
     );
   }
 
+  const itemPrice = offerPrice ?? listing.price;
   const shippingAmount = pickupMethod === "shipping" ? listing.shipping_price : 0;
   const discount = couponApplied?.discountAmount ?? 0;
-  const total = Math.max(listing.price + shippingAmount - discount, 0);
+  const total = Math.max(itemPrice + shippingAmount - discount, 0);
 
   return (
     <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8">
@@ -181,7 +202,15 @@ export default function CheckoutPage() {
           <p className="text-xs text-muted-foreground mt-0.5">
             {listing.brand ?? listing.condition}
           </p>
-          <p className="text-base font-bold text-navy mt-1">{formatAUD(listing.price)}</p>
+          {offerPrice ? (
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-base font-bold text-olive">{formatAUD(offerPrice)}</p>
+              <p className="text-sm text-muted-foreground line-through">{formatAUD(listing.price)}</p>
+              <span className="text-xs bg-olive/10 text-olive font-medium px-1.5 py-0.5 rounded-full">Offer price</span>
+            </div>
+          ) : (
+            <p className="text-base font-bold text-navy mt-1">{formatAUD(listing.price)}</p>
+          )}
         </div>
       </div>
 
@@ -225,8 +254,8 @@ export default function CheckoutPage() {
       {/* Price breakdown */}
       <div className="rounded-xl bg-stone-50 border border-border p-4 mb-6 space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Item price</span>
-          <span>{formatAUD(listing.price)}</span>
+          <span className="text-muted-foreground">Item price{offerPrice ? " (offer)" : ""}</span>
+          <span className={offerPrice ? "text-olive font-semibold" : ""}>{formatAUD(itemPrice)}</span>
         </div>
         {pickupMethod === "shipping" && (
           <div className="flex justify-between text-sm">

@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { BundleOfferCard, BundleAcceptedCard, BundleDeclinedCard } from "./BundleOfferCard";
+import { ListingOfferCard } from "./ListingOfferCard";
 
 const OFF_PLATFORM_PATTERNS = [
   /\bcash\b/i,
@@ -301,7 +302,18 @@ export default function MessageThreadPage() {
               )}
               <div className={cn("flex", isMe ? "justify-end" : "justify-start")}>
                 <div className="flex flex-col max-w-[75%]">
-                  {msg.body.startsWith("__BUNDLE_OFFER__:") ? (
+                  {msg.body.startsWith("__LISTING_OFFER__:") ? (
+                    <div>
+                      <ListingOfferCard
+                        offerId={msg.body.replace("__LISTING_OFFER__:", "")}
+                        currentUserId={meta.current_user_id}
+                        sellerId={meta.seller_id}
+                      />
+                      <p className={cn("text-[10px] mt-1", isMe ? "text-right text-muted-foreground" : "text-muted-foreground")}>
+                        {formatTime(msg.created_at)}
+                      </p>
+                    </div>
+                  ) : msg.body.startsWith("__BUNDLE_OFFER__:") ? (
                     <div>
                       <BundleOfferCard
                         offerId={msg.body.replace("__BUNDLE_OFFER__:", "")}

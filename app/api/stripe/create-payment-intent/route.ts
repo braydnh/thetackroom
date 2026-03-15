@@ -19,7 +19,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01
 
 export async function POST(req: Request) {
   try {
-    const { listing_id, pickup_method = "shipping", shipping_address, coupon_code } = await req.json() as {
+    const { listing_id, pickup_method = "shipping", shipping_address, coupon_code, offer_id } = await req.json() as {
       listing_id: string;
       pickup_method?: "shipping" | "local_pickup";
       shipping_address?: {
@@ -31,6 +31,7 @@ export async function POST(req: Request) {
         postcode: string;
       };
       coupon_code?: string;
+      offer_id?: string;
     };
 
     if (!listing_id) {
@@ -70,11 +71,35 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Seller has not set up payments yet" }, { status: 400 });
     }
 
+    // Validate accepted offer if provided
+    let acceptedOfferPrice: number | null = null;
+    if (offer_id) {
+      const { data: offer } = await (admin as any)
+        .from("listing_offers")
+        .select("id, listing_id, buyer_id, seller_id, accepted_price, status")
+        .eq("id", offer_id)
+        .single();
+
+      if (!offer || offer.listing_id !== listing_id) {
+        return NextResponse.json({ error: "Offer not found for this listing" }, { status: 404 });
+      }
+      if (offer.buyer_id !== user.id) {
+        return NextResponse.json({ error: "This offer belongs to a different buyer" }, { status: 403 });
+      }
+      if (!["accepted", "counter_accepted"].includes(offer.status)) {
+        return NextResponse.json({ error: "Offer is not in an accepted state" }, { status: 400 });
+      }
+      if (!offer.accepted_price) {
+        return NextResponse.json({ error: "Offer has no accepted price" }, { status: 400 });
+      }
+      acceptedOfferPrice = offer.accepted_price;
+    }
+
     // Determine shipping amount
     const shippingAmount = pickup_method === "shipping" && listing.allows_shipping
       ? listing.shipping_price
       : 0;
-    const subtotal = listing.price;
+    const subtotal = acceptedOfferPrice ?? listing.price;
 
     // Validate coupon server-side if provided
     let discountAmount = 0;
