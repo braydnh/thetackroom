@@ -485,6 +485,24 @@ export default function OrderDetailPage() {
         )}
       </div>
 
+      {/* Message the other party — shown for all shipping orders (including disputed) */}
+      {order.pickup_method === "shipping" && (!TERMINAL_STATUSES.has(order.status) || order.status === "disputed") && (
+        <div className="mb-6">
+          <Button
+            variant="outline"
+            className="w-full border-olive text-olive hover:bg-olive hover:text-cream"
+            onClick={handleContact}
+            disabled={contactingOtherParty}
+          >
+            {contactingOtherParty ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Opening chat…</>
+            ) : (
+              <><MessageCircle className="mr-2 h-4 w-4" /> Message @{order.other_party_username}</>
+            )}
+          </Button>
+        </div>
+      )}
+
       {/* Seller: tracking submission */}
       {order.is_seller && order.status === "awaiting_shipment" && order.pickup_method === "shipping" && (
         <div className="rounded-xl border border-border p-5 mb-6">

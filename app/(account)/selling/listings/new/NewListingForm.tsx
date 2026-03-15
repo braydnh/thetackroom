@@ -171,10 +171,11 @@ export default function NewListingForm({ commissionPct = 5 }: { commissionPct?: 
         if (imgError) throw new Error(imgError.message);
       }
 
-      // 4. Activate the listing
+      // 4. Activate the listing + set primary image URL
+      const primaryImageUrl = imageRows.find((r) => r.is_primary)?.display_url ?? imageRows[0]?.display_url ?? null;
       const { error: activateError } = await supabase
         .from("listings")
-        .update({ status: "active" })
+        .update({ status: "active", primary_image_url: primaryImageUrl })
         .eq("id", listing.id);
       if (activateError) throw new Error(activateError.message);
 

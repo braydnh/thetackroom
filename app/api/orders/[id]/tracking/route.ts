@@ -11,7 +11,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { create17TrackTracking } from "@/lib/17track";
+import { createTrackingmoreTracking } from "@/lib/trackingmore";
 import { sendEmail } from "@/lib/resend";
 import { itemShippedBuyerEmail } from "@/lib/emails";
 
@@ -98,12 +98,14 @@ export async function POST(
     console.error("Tracking email/notification failed:", err);
   }
 
-  // Create 17track tracking record (non-blocking — save tracking number as ID if created)
+  // Register with Trackingmore so it polls the carrier and fires delivery webhooks
   try {
-    const result = await create17TrackTracking({
+    const listingTitle = (order as any).listings?.title ?? "Order";
+    const result = await createTrackingmoreTracking({
       trackingNumber: cleanTracking,
       carrier: carrier ?? "other",
       orderId: id,
+      title: listingTitle,
     });
     if (result?.tracking_id) {
       await admin
@@ -113,7 +115,7 @@ export async function POST(
     }
   } catch (err) {
     // Non-fatal — order is already marked shipped
-    console.error("17track tracking creation failed:", err);
+    console.error("Trackingmore tracking registration failed:", err);
   }
 
   return NextResponse.json({ success: true });

@@ -8,17 +8,20 @@
 const AFTERSHIP_BASE = "https://api.aftership.com/v4";
 
 const CARRIER_SLUG_MAP: Record<string, string> = {
-  auspost: "australia-post",
-  startrack: "startrack",
-  sendle: "sendle",
-  courier_please: "couriersplease",
-  dhl: "dhl",
-  tnt: "tnt-au",
-  other: "australia-post", // fallback
+  auspost:        "australia-post",
+  startrack:      "startrack",
+  sendle:         "sendle",
+  courier_please: "couriers-please",
+  fastway:        "aramex-australia",
+  toll:           "toll-ipec",
+  imile:          "imile",
+  dhl:            "dhl",
+  tnt:            "tnt-au",
+  other:          "", // empty = AfterShip auto-detects carrier
 };
 
 export function toAfterShipSlug(carrier: string): string {
-  return CARRIER_SLUG_MAP[carrier] ?? "australia-post";
+  return CARRIER_SLUG_MAP[carrier] ?? "";
 }
 
 export async function createAfterShipTracking({
@@ -40,30 +43,30 @@ export async function createAfterShipTracking({
 
   const slug = toAfterShipSlug(carrier);
 
+  const trackingBody: Record<string, any> = {
+    tracking_number: trackingNumber,
+    title: title.slice(0, 100),
+    custom_fields: { order_id: orderId },
+  };
+  if (slug) trackingBody.slug = slug;
+
   const res = await fetch(`${AFTERSHIP_BASE}/trackings`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "aftership-api-key": apiKey,
     },
-    body: JSON.stringify({
-      tracking: {
-        tracking_number: trackingNumber,
-        slug,
-        title: title.slice(0, 100),
-        custom_fields: {
-          order_id: orderId,
-        },
-      },
-    }),
+    body: JSON.stringify({ tracking: trackingBody }),
   });
 
-  if (!res.ok) {
-    const body = await res.text();
-    console.error("AfterShip createTracking error:", res.status, body);
-    return null;
+  const data = await res.json();
+
+  // 201 = created, meta code 4003 = already registered (idempotent — both are fine)
+  if (res.status === 201 || data?.meta?.code === 4003) {
+    const id = data?.data?.tracking?.id ?? trackingNumber;
+    return { tracking_id: id };
   }
 
-  const data = await res.json();
-  return { tracking_id: data?.data?.tracking?.id ?? "" };
+  console.error("AfterShip createTracking error:", res.status, JSON.stringify(data));
+  return null;
 }
