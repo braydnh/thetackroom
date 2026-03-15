@@ -38,7 +38,7 @@ export async function POST(req: Request) {
   `;
 
   await sendEmail({
-    to: "contact@tackroomshop.com.au",
+    to: "support@tackroomshop.com.au",
     subject: emailSubject,
     html,
   });
