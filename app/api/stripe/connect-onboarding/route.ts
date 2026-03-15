@@ -58,7 +58,8 @@ export async function POST() {
         .eq("id", user.id);
     }
 
-    const origin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const origin = process.env.NEXT_PUBLIC_APP_URL
+      ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
     // Create an Account Link for the onboarding flow
     const accountLink = await stripe.accountLinks.create({

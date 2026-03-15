@@ -15,7 +15,7 @@ export default async function NewListingPage() {
     admin.from("platform_config").select("key, value").in("key", ["commission_pct", "ambassador_commission_pct", "admin_commission_pct"]),
   ]);
 
-  if (!profile?.stripe_onboarding_complete) {
+  if (!profile?.stripe_onboarding_complete && (profile as any)?.role !== "admin") {
     redirect("/selling/onboarding");
   }
 
