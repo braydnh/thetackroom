@@ -146,7 +146,7 @@ export function CouponManager({ initialCoupons }: Props) {
                 value={form.discount_value}
                 onChange={(e) => setField("discount_value", e.target.value)}
                 placeholder={form.discount_type === "percentage" ? "100" : "50.00"}
-                min="0.01"
+                min={form.discount_type === "percentage" ? "1" : "0.01"}
                 max={form.discount_type === "percentage" ? "100" : undefined}
                 step={form.discount_type === "percentage" ? "1" : "0.01"}
                 required
