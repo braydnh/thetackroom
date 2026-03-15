@@ -9,6 +9,7 @@ import { ChevronLeft, Send, Loader2, ShieldAlert } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { BundleOfferCard, BundleAcceptedCard, BundleDeclinedCard } from "./BundleOfferCard";
 
 const OFF_PLATFORM_PATTERNS = [
   /\bcash\b/i,
@@ -300,23 +301,55 @@ export default function MessageThreadPage() {
               )}
               <div className={cn("flex", isMe ? "justify-end" : "justify-start")}>
                 <div className="flex flex-col max-w-[75%]">
-                  <div
-                    className={cn(
-                      "rounded-2xl px-4 py-2 text-sm",
-                      isMe
-                        ? "bg-olive text-cream rounded-br-sm"
-                        : "bg-white border border-border text-navy rounded-bl-sm"
-                    )}
-                  >
-                    <p className="whitespace-pre-wrap break-words">{msg.body}</p>
-                    <p className={cn("text-[10px] mt-1", isMe ? "text-cream/70 text-right" : "text-muted-foreground")}>
-                      {formatTime(msg.created_at)}
-                    </p>
-                  </div>
-                  {containsOffPlatformKeywords(msg.body) && (
-                    <p className={cn("text-[10px] mt-1 flex items-center gap-0.5 text-amber-600", isMe ? "justify-end" : "justify-start")}>
-                      <ShieldAlert className="h-2.5 w-2.5" /> Off-platform payment — not covered by buyer protection
-                    </p>
+                  {msg.body.startsWith("__BUNDLE_OFFER__:") ? (
+                    <div>
+                      <BundleOfferCard
+                        offerId={msg.body.replace("__BUNDLE_OFFER__:", "")}
+                        currentUserId={meta.current_user_id}
+                        sellerId={meta.seller_id}
+                      />
+                      <p className={cn("text-[10px] mt-1", isMe ? "text-right text-muted-foreground" : "text-muted-foreground")}>
+                        {formatTime(msg.created_at)}
+                      </p>
+                    </div>
+                  ) : msg.body.startsWith("__BUNDLE_ACCEPTED__:") ? (
+                    <div>
+                      <BundleAcceptedCard
+                        listingId={msg.body.replace("__BUNDLE_ACCEPTED__:", "")}
+                        isSeller={isMe && meta.current_user_id === meta.seller_id}
+                      />
+                      <p className={cn("text-[10px] mt-1", isMe ? "text-right text-muted-foreground" : "text-muted-foreground")}>
+                        {formatTime(msg.created_at)}
+                      </p>
+                    </div>
+                  ) : msg.body.startsWith("__BUNDLE_DECLINED__:") ? (
+                    <div>
+                      <BundleDeclinedCard />
+                      <p className={cn("text-[10px] mt-1", isMe ? "text-right text-muted-foreground" : "text-muted-foreground")}>
+                        {formatTime(msg.created_at)}
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <div
+                        className={cn(
+                          "rounded-2xl px-4 py-2 text-sm",
+                          isMe
+                            ? "bg-olive text-cream rounded-br-sm"
+                            : "bg-white border border-border text-navy rounded-bl-sm"
+                        )}
+                      >
+                        <p className="whitespace-pre-wrap break-words">{msg.body}</p>
+                        <p className={cn("text-[10px] mt-1", isMe ? "text-cream/70 text-right" : "text-muted-foreground")}>
+                          {formatTime(msg.created_at)}
+                        </p>
+                      </div>
+                      {containsOffPlatformKeywords(msg.body) && (
+                        <p className={cn("text-[10px] mt-1 flex items-center gap-0.5 text-amber-600", isMe ? "justify-end" : "justify-start")}>
+                          <ShieldAlert className="h-2.5 w-2.5" /> Off-platform payment — not covered by buyer protection
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

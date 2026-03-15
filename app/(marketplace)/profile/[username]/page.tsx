@@ -8,6 +8,7 @@ import { formatAUD } from "@/lib/utils/currency";
 import { Star, Package, ShoppingBag, Pencil } from "lucide-react";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { Button } from "@/components/ui/button";
+import { BundleOfferButton } from "./BundleOfferButton";
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username } = await params;
@@ -112,13 +113,22 @@ export default async function SellerProfilePage({
                 )}
               </div>
             </div>
-            {isOwnProfile && (
-              <Button size="sm" variant="outline" className="gap-1.5 flex-shrink-0" asChild>
-                <Link href="/settings">
-                  <Pencil className="h-3.5 w-3.5" /> Edit Profile
-                </Link>
-              </Button>
-            )}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {!isOwnProfile && (
+                <BundleOfferButton
+                  sellerId={(profile as any).id}
+                  sellerUsername={(profile as any).username}
+                  currentUserId={currentUser?.id ?? null}
+                />
+              )}
+              {isOwnProfile && (
+                <Button size="sm" variant="outline" className="gap-1.5" asChild>
+                  <Link href="/settings">
+                    <Pencil className="h-3.5 w-3.5" /> Edit Profile
+                  </Link>
+                </Button>
+              )}
+            </div>
           </div>
 
           <p className="text-sm text-muted-foreground mt-1">@{(profile as any).username}</p>
