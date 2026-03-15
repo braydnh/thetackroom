@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const admin = createAdminClient();
+  const admin = createAdminClient() as any;
 
   const { data: comments } = await admin
     .from("feature_request_comments")
@@ -32,7 +32,7 @@ export async function POST(
   if (!body?.trim()) return NextResponse.json({ error: "Comment cannot be empty" }, { status: 400 });
   if (body.trim().length > 500) return NextResponse.json({ error: "Comment too long" }, { status: 400 });
 
-  const admin = createAdminClient();
+  const admin = createAdminClient() as any;
   const { data, error } = await admin
     .from("feature_request_comments")
     .insert({ request_id: id, user_id: user.id, body: body.trim() })
@@ -53,7 +53,7 @@ export async function DELETE(
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { commentId } = await req.json() as { commentId: string };
-  const admin = createAdminClient();
+  const admin = createAdminClient() as any;
 
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
   const isAdmin = (profile as any)?.role === "admin";

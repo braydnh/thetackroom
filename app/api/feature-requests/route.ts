@@ -7,7 +7,7 @@ export async function GET(req: Request) {
   const sort = searchParams.get("sort") ?? "top";
   const status = searchParams.get("status") ?? "all";
 
-  const admin = createAdminClient();
+  const admin = createAdminClient() as any;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -15,17 +15,16 @@ export async function GET(req: Request) {
     .from("feature_requests")
     .select("id, title, description, status, vote_count, created_at, user_id, profiles!user_id(username, avatar_url)");
 
-  if (status !== "all") query = (query as any).eq("status", status);
+  if (status !== "all") query = query.eq("status", status);
 
   if (sort === "top") {
-    query = (query as any).order("vote_count", { ascending: false }).order("created_at", { ascending: false });
+    query = query.order("vote_count", { ascending: false }).order("created_at", { ascending: false });
   } else {
-    query = (query as any).order("created_at", { ascending: false });
+    query = query.order("created_at", { ascending: false });
   }
 
-  const { data: requests } = await (query as any).limit(50);
+  const { data: requests } = await query.limit(50);
 
-  // Fetch current user's votes if logged in
   let userVotes: Record<string, number> = {};
   if (user && requests?.length) {
     const { data: votes } = await admin
@@ -36,7 +35,6 @@ export async function GET(req: Request) {
     (votes ?? []).forEach((v: any) => { userVotes[v.request_id] = v.value; });
   }
 
-  // Fetch comment counts
   const commentCounts: Record<string, number> = {};
   if (requests?.length) {
     const { data: counts } = await admin
@@ -67,7 +65,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Title must be at least 5 characters" }, { status: 400 });
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("feature_requests")
     .insert({ user_id: user.id, title: title.trim(), description: description?.trim() ?? null })
     .select("id")

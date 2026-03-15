@@ -1,3 +1,5 @@
+export const revalidate = 60;
+
 import { Suspense } from "react";
 import Link from "next/link";
 import { FilterSidebar } from "@/components/listings/FilterSidebar";
@@ -170,7 +172,7 @@ export default async function ListingsPage({
 
 
 
-const PAGE_SIZE = 45;
+const PAGE_SIZE = 40;
 
 function applyFilters(query: any, params: SearchParams, excludeIds: string[]) {
   if (excludeIds.length > 0) query = query.not("id", "in", `(${excludeIds.join(",")})`);

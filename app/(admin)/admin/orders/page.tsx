@@ -53,7 +53,7 @@ export default async function AdminOrdersPage({
 
   const { data: orders } = await (query as any);
 
-  const STATUSES = ["all", "pending_payment", "disputed", "awaiting_shipment", "shipped", "dispute_window", "completed", "refunded"];
+  const STATUSES = ["all", "pending_payment", "payment_captured", "disputed", "awaiting_shipment", "shipped", "dispute_window", "completed", "refunded"];
 
   function tabUrl(s: string) {
     const p = new URLSearchParams({ status: s });
@@ -125,7 +125,7 @@ export default async function AdminOrdersPage({
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
-                {order.status === "pending_payment" && order.stripe_payment_intent_id && (
+                {(order.status === "pending_payment" || order.status === "payment_captured") && order.stripe_payment_intent_id && (
                   <SyncPaymentButton orderId={order.id} />
                 )}
                 {order.status === "shipped" && (

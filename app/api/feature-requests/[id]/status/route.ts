@@ -14,7 +14,7 @@ export async function PATCH(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const admin = createAdminClient();
+  const admin = createAdminClient() as any;
 
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
   if ((profile as any)?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -27,7 +27,6 @@ export async function PATCH(
 
   await admin.from("feature_requests").update({ status }).eq("id", id);
 
-  // Notify all Yay voters when feature is done
   if (status === "done" && (request as any).status !== "done") {
     const { data: yayVoters } = await admin
       .from("feature_request_votes")

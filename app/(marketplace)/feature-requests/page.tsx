@@ -34,7 +34,7 @@ export default async function FeatureRequestsPage({
   }
 
   // Fetch requests
-  let query = admin
+  let query = (admin as any)
     .from("feature_requests")
     .select("id, title, description, status, vote_count, created_at, user_id, profiles!user_id(username, avatar_url)");
 
@@ -50,7 +50,7 @@ export default async function FeatureRequestsPage({
   // Fetch user votes
   let userVotes: Record<string, number> = {};
   if (user && requests?.length) {
-    const { data: votes } = await admin
+    const { data: votes } = await (admin as any)
       .from("feature_request_votes")
       .select("request_id, value")
       .eq("user_id", user.id)
@@ -61,7 +61,7 @@ export default async function FeatureRequestsPage({
   // Fetch comment counts
   const commentCounts: Record<string, number> = {};
   if (requests?.length) {
-    const { data: counts } = await admin
+    const { data: counts } = await (admin as any)
       .from("feature_request_comments")
       .select("request_id")
       .in("request_id", (requests as any[]).map((r) => r.id));

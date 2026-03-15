@@ -45,12 +45,28 @@ export async function POST(
     .single();
 
   if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
-  if ((order as any).status !== "pending_payment") {
-    return NextResponse.json({ error: `Order is already ${(order as any).status}` }, { status: 400 });
+
+  const currentStatus = (order as any).status;
+  const syncableStatuses = ["pending_payment", "payment_captured"];
+  if (!syncableStatuses.includes(currentStatus)) {
+    return NextResponse.json({ error: `Order is already ${currentStatus}` }, { status: 400 });
   }
 
   const piId = (order as any).stripe_payment_intent_id;
   if (!piId) return NextResponse.json({ error: "No payment intent on this order" }, { status: 400 });
+
+  // If already payment_captured, just advance to the correct next status without re-checking Stripe
+  if (currentStatus === "payment_captured") {
+    const newStatus = (order as any).pickup_method === "shipping" ? "awaiting_shipment" : "payment_captured";
+    if (newStatus === "payment_captured") {
+      return NextResponse.json({ error: "Order is a pickup order — manually advance when ready" }, { status: 400 });
+    }
+    await admin.from("orders").update({ status: newStatus }).eq("id", orderId);
+    if ((order as any).listing_id) {
+      await admin.from("listings").update({ status: "reserved" }).eq("id", (order as any).listing_id);
+    }
+    return NextResponse.json({ success: true, newStatus });
+  }
 
   let pi: Stripe.PaymentIntent;
   try {
