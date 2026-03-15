@@ -21,6 +21,7 @@ const footerLinks = {
     { label: "Buyer Protection", href: "/buyer-protection" },
     { label: "Contact Us", href: "/contact" },
     { label: "Report an Issue", href: "/contact?type=report" },
+    { label: "Request a Feature", href: "/feature-requests" },
   ],
   "Company": [
     { label: "About", href: "/about" },
