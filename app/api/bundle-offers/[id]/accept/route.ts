@@ -42,13 +42,14 @@ export async function POST(
     .eq("id", offer.buyer_id)
     .single();
 
-  // Fetch item titles for description
+  // Fetch item titles and images for description + collage
   const { data: listings } = await admin
     .from("listings")
-    .select("title")
+    .select("title, primary_image_url")
     .in("id", offer.listing_ids);
 
   const itemTitles = (listings ?? []).map((l: any) => l.title).join(", ");
+  const images = (listings ?? []).map((l: any) => l.primary_image_url).filter(Boolean);
 
   // Create bundle listing
   const { data: bundleListing, error: listingError } = await admin
@@ -64,6 +65,9 @@ export async function POST(
       status: "active",
       category: "horse",
       condition: "good",
+      is_bundle: true,
+      primary_image_url: images[0] ?? null,
+      image_urls: images,
     })
     .select("id")
     .single();

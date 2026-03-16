@@ -43,6 +43,7 @@ async function NewestListings() {
        profiles!seller_id(username, avatar_url, is_founding_seller, is_ambassador)`
     )
     .eq("status", "active")
+    .neq("is_bundle", true)
     .order("created_at", { ascending: false })
     .limit(10);
 

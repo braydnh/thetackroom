@@ -57,7 +57,8 @@ export async function FeaturedListings({
        profiles!seller_id(username, avatar_url, is_founding_seller, is_ambassador)`
     )
     .in("id", featuredIds)
-    .eq("status", "active");
+    .eq("status", "active")
+    .neq("is_bundle", true);
 
   if (!rows || rows.length === 0) {
     if (!showEmpty) return null;

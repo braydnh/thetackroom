@@ -227,7 +227,8 @@ function buildQuery(supabase: any, params: SearchParams, excludeIds: string[], f
       `id, title, price, condition, brand, size, allows_pickup, primary_image_url,
        profiles!seller_id(username, avatar_url, is_founding_seller, is_ambassador)`
     )
-    .eq("status", "active");
+    .eq("status", "active")
+    .neq("is_bundle", true);
   if (followedIds) query = query.in("seller_id", followedIds);
   return applySort(applyFilters(query, params, excludeIds), params);
 }
@@ -274,7 +275,7 @@ async function ListingsContent({ params, excludeIds = [] }: { params: SearchPara
 
   // Build count query separately (no join needed — avoids silent failure from chained .select())
   function buildCountQuery(sb: any) {
-    let q = sb.from("listings").select("id", { count: "exact", head: true }).eq("status", "active");
+    let q = sb.from("listings").select("id", { count: "exact", head: true }).eq("status", "active").neq("is_bundle", true);
     if (followedIds) q = q.in("seller_id", followedIds);
     return applyFilters(q, params, excludeIds);
   }

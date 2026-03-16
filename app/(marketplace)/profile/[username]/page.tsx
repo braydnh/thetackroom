@@ -63,6 +63,7 @@ export default async function SellerProfilePage({
       .select("id, title, price, condition, brand, primary_image_url")
       .eq("seller_id", profile.id)
       .eq("status", "active")
+      .neq("is_bundle", true)
       .order("created_at", { ascending: false })
       .range(offset, offset + LISTINGS_PER_PAGE),
     admin

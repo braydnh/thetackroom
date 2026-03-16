@@ -62,6 +62,7 @@ export async function POST(req: Request) {
       .from("listings")
       .select("id, title, price")
       .eq("status", "active")
+      .neq("is_bundle", true)
       .textSearch("search_vector", query.trim(), { type: "websearch" });
 
     if (category) q = q.eq("category", category);
