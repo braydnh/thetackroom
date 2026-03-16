@@ -40,17 +40,6 @@ export default async function MessagesPage() {
     );
   }
 
-  // Mark all unread messages in the user's conversations as read
-  const allConvoIds = conversations.map((c: any) => c.id);
-  if (allConvoIds.length > 0) {
-    await admin
-      .from("messages")
-      .update({ read_at: new Date().toISOString() })
-      .in("conversation_id", allConvoIds)
-      .neq("sender_id", user.id)
-      .is("read_at", null);
-  }
-
   // Fetch the other party profile + listing title for each conversation
   const otherPartyIds = conversations.map((c: any) =>
     c.buyer_id === user.id ? c.seller_id : c.buyer_id
@@ -83,6 +72,17 @@ export default async function MessagesPage() {
       lastMsgMap.set(m.conversation_id, m);
     }
   });
+
+  // Mark all unread messages as read AFTER computing hasUnread
+  const allConvoIds = conversations.map((c: any) => c.id);
+  if (allConvoIds.length > 0) {
+    await admin
+      .from("messages")
+      .update({ read_at: new Date().toISOString() })
+      .in("conversation_id", allConvoIds)
+      .neq("sender_id", user.id)
+      .is("read_at", null);
+  }
 
   return (
     <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8">
@@ -129,7 +129,7 @@ export default async function MessagesPage() {
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className={`text-sm font-medium ${hasUnread ? "text-navy font-semibold" : "text-navy"}`}>
+                  <p className={`text-sm ${hasUnread ? "font-bold text-navy" : "font-medium text-navy"}`}>
                     @{other?.username ?? "user"}
                   </p>
                   {hasUnread && (
@@ -137,19 +137,26 @@ export default async function MessagesPage() {
                   )}
                 </div>
                 {listing && (
-                  <p className="text-xs text-muted-foreground truncate">{listing.title}</p>
+                  <p className={`text-xs truncate ${hasUnread ? "font-semibold text-navy" : "text-muted-foreground"}`}>{listing.title}</p>
                 )}
                 {lastMsg && (
-                  <p className={`text-xs truncate mt-0.5 ${hasUnread ? "text-navy" : "text-muted-foreground"}`}>
+                  <p className={`text-xs truncate mt-0.5 ${hasUnread ? "font-semibold text-navy" : "text-muted-foreground"}`}>
                     {lastMsg.sender_id === user.id ? "You: " : ""}{lastMsg.body}
                   </p>
                 )}
               </div>
 
-              <div className="flex items-center gap-1 flex-shrink-0">
+              <div className="flex flex-col items-end gap-1 flex-shrink-0">
                 {lastMsg && (
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(lastMsg.created_at).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}
+                  <span className={`text-xs ${hasUnread ? "font-semibold text-navy" : "text-muted-foreground"}`}>
+                    {(() => {
+                      const d = new Date(lastMsg.created_at);
+                      const now = new Date();
+                      const isToday = d.toDateString() === now.toDateString();
+                      const time = d.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit", hour12: true });
+                      if (isToday) return time;
+                      return `${d.toLocaleDateString("en-AU", { day: "numeric", month: "short" })} ${time}`;
+                    })()}
                   </span>
                 )}
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
