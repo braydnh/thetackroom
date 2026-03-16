@@ -34,11 +34,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Only increment comment_count for top-level comments
-  if (!parent_id) {
-    const { data: post } = await (admin as any).from("feed_posts").select("comment_count").eq("id", postId).single();
-    await (admin as any).from("feed_posts").update({ comment_count: ((post as any)?.comment_count ?? 0) + 1 }).eq("id", postId);
-  }
+  const { data: post } = await (admin as any).from("feed_posts").select("comment_count").eq("id", postId).single();
+  await (admin as any).from("feed_posts").update({ comment_count: ((post as any)?.comment_count ?? 0) + 1 }).eq("id", postId);
 
   return NextResponse.json({ comment }, { status: 201 });
 }
@@ -65,11 +62,8 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   // Deleting cascades to replies via DB foreign key
   await (admin as any).from("feed_comments").delete().eq("id", commentId);
 
-  // Only decrement for top-level comment deletions
-  if (!comment.parent_id) {
-    const { data: post } = await (admin as any).from("feed_posts").select("comment_count").eq("id", postId).single();
-    await (admin as any).from("feed_posts").update({ comment_count: Math.max(0, ((post as any)?.comment_count ?? 1) - 1) }).eq("id", postId);
-  }
+  const { data: post } = await (admin as any).from("feed_posts").select("comment_count").eq("id", postId).single();
+  await (admin as any).from("feed_posts").update({ comment_count: Math.max(0, ((post as any)?.comment_count ?? 1) - 1) }).eq("id", postId);
 
   return NextResponse.json({ deleted: true });
 }
