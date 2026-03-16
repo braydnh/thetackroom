@@ -87,11 +87,11 @@ export default async function FeedPage({
       </div>
 
       {/* All / Following tabs */}
-      <div className="flex gap-1 border-b border-border mb-5">
+      <div className="flex gap-2 mb-5">
         <Link
           href="/feed"
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
-            view !== "following" ? "border-olive text-olive" : "border-transparent text-muted-foreground hover:text-navy"
+          className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+            view !== "following" ? "bg-olive text-cream" : "bg-muted text-muted-foreground hover:bg-muted/80"
           }`}
         >
           All
@@ -99,8 +99,8 @@ export default async function FeedPage({
         {user && (
           <Link
             href="/feed?view=following"
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
-              view === "following" ? "border-olive text-olive" : "border-transparent text-muted-foreground hover:text-navy"
+            className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+              view === "following" ? "bg-olive text-cream" : "bg-muted text-muted-foreground hover:bg-muted/80"
             }`}
           >
             Following
