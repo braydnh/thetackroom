@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Rss, Users } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Rss, Users, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { PostCard } from "./PostCard";
 import { NewPostForm } from "./NewPostForm";
+
+const PAGE_SIZE = 20;
 
 interface FeedClientProps {
   initialPosts: any[];
@@ -17,6 +19,9 @@ interface FeedClientProps {
 
 export function FeedClient({ initialPosts, currentUserId, isAdmin, topic, view, isLoggedIn }: FeedClientProps) {
   const [posts, setPosts] = useState(initialPosts);
+  const [offset, setOffset] = useState(initialPosts.length);
+  const [hasMore, setHasMore] = useState(initialPosts.length === PAGE_SIZE);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   function handlePost(newPost: any) {
     setPosts((prev) => [newPost, ...prev]);
@@ -25,6 +30,25 @@ export function FeedClient({ initialPosts, currentUserId, isAdmin, topic, view, 
   function handleDelete(id: string) {
     setPosts((prev) => prev.filter((p) => p.id !== id));
   }
+
+  const loadMore = useCallback(async () => {
+    setLoadingMore(true);
+    const params = new URLSearchParams({
+      limit: String(PAGE_SIZE),
+      offset: String(offset),
+      view,
+    });
+    if (topic !== "all") params.set("topic", topic);
+
+    const res = await fetch(`/api/feed/posts?${params}`);
+    const data = await res.json();
+    if (res.ok) {
+      setPosts((prev) => [...prev, ...(data.posts ?? [])]);
+      setOffset((o) => o + (data.posts?.length ?? 0));
+      setHasMore(data.hasMore ?? false);
+    }
+    setLoadingMore(false);
+  }, [offset, topic, view]);
 
   // Empty state for Following tab
   if (view === "following" && posts.length === 0) {
@@ -68,8 +92,25 @@ export function FeedClient({ initialPosts, currentUserId, isAdmin, topic, view, 
               onDelete={handleDelete}
             />
           ))}
+
+          {hasMore && (
+            <div className="flex justify-center pt-2">
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-navy transition-colors disabled:opacity-50"
+              >
+                {loadingMore && <Loader2 className="h-4 w-4 animate-spin" />}
+                {loadingMore ? "Loading…" : "Load more posts"}
+              </button>
+            </div>
+          )}
         </div>
       )}
+
+      <p className="text-center text-xs text-muted-foreground mt-6">
+        🐴 Keep it community — no advertisements or spam allowed.
+      </p>
     </>
   );
 }

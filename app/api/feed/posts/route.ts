@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const topic = searchParams.get("topic");
+  const view = searchParams.get("view");
   const limit = Math.min(parseInt(searchParams.get("limit") ?? "20"), 50);
   const offset = parseInt(searchParams.get("offset") ?? "0");
 
@@ -12,6 +13,19 @@ export async function GET(req: Request) {
   const { data: { user } } = await supabase.auth.getUser();
 
   const admin = createAdminClient();
+
+  // For following tab, get followed user IDs first
+  let followedIds: string[] = [];
+  if (view === "following" && user) {
+    const { data: follows } = await (admin as any)
+      .from("follows")
+      .select("following_id")
+      .eq("follower_id", user.id);
+    followedIds = (follows ?? []).map((f: any) => f.following_id);
+    if (followedIds.length === 0) {
+      return NextResponse.json({ posts: [], hasMore: false });
+    }
+  }
 
   let query = (admin as any)
     .from("feed_posts")
@@ -22,7 +36,9 @@ export async function GET(req: Request) {
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (topic && topic !== "all") {
+  if (view === "following") {
+    query = query.in("user_id", followedIds) as any;
+  } else if (topic && topic !== "all") {
     query = query.eq("topic", topic) as any;
   }
 
@@ -44,7 +60,7 @@ export async function GET(req: Request) {
     liked: likedPostIds.has(p.id),
   }));
 
-  return NextResponse.json({ posts: postsWithLikes });
+  return NextResponse.json({ posts: postsWithLikes, hasMore: postsWithLikes.length === limit });
 }
 
 export async function POST(req: Request) {
