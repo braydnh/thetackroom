@@ -5,6 +5,7 @@ import { Instagram, Facebook } from "lucide-react";
 const footerLinks = {
   "Marketplace": [
     { label: "Shop All", href: "/listings" },
+    { label: "Feed Room", href: "/feed" },
     { label: "Horse", href: "/listings?category=horse" },
     { label: "Rider", href: "/listings?category=rider" },
     { label: "Stable & Agistment", href: "/listings?category=stable" },

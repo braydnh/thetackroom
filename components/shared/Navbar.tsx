@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 
 const navLinks = [
   { label: "Home", href: "/" },
+  { label: "Feed Room", href: "/feed" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
 ];
@@ -388,6 +389,9 @@ export function Navbar({ user, unreadMessages = 0, unreadNotifications = 0 }: Na
 
               <Link href="/selling/listings/new" className="rounded-md px-4 py-3 text-sm font-medium text-cream hover:bg-olive-light" onClick={() => setMobileOpen(false)}>
                 Sell with Us
+              </Link>
+              <Link href="/feed" className="rounded-md px-4 py-3 text-sm font-medium text-cream hover:bg-olive-light" onClick={() => setMobileOpen(false)}>
+                Feed Room
               </Link>
               <Link href="/about" className="rounded-md px-4 py-3 text-sm font-medium text-cream hover:bg-olive-light" onClick={() => setMobileOpen(false)}>
                 About
