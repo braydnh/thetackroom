@@ -45,7 +45,7 @@ interface PostCardProps {
 export function PostCard({ post: initial, currentUserId, isAdmin, onDelete }: PostCardProps) {
   const [likeCount, setLikeCount] = useState(initial.like_count);
   const [liked, setLiked] = useState(initial.liked);
-  const [likeLoading, setLikeLoading] = useState(false);
+  const [commentCount, setCommentCount] = useState(initial.comment_count);
   const [expanded, setExpanded] = useState(false);
   const [comments, setComments] = useState<any[] | null>(null);
   const [loadingComments, setLoadingComments] = useState(false);
@@ -53,16 +53,18 @@ export function PostCard({ post: initial, currentUserId, isAdmin, onDelete }: Po
 
   const profile = Array.isArray(initial.profiles) ? initial.profiles[0] : initial.profiles;
 
+  // Optimistic like — update UI immediately, revert on error
   async function toggleLike() {
     if (!currentUserId) { toast.error("Log in to like posts"); return; }
-    setLikeLoading(true);
+    const wasLiked = liked;
+    setLiked(!wasLiked);
+    setLikeCount((c) => wasLiked ? Math.max(0, c - 1) : c + 1);
     const res = await fetch(`/api/feed/posts/${initial.id}/like`, { method: "POST" });
-    const data = await res.json();
-    if (res.ok) {
-      setLiked(data.liked);
-      setLikeCount((c) => data.liked ? c + 1 : Math.max(0, c - 1));
+    if (!res.ok) {
+      // Revert on failure
+      setLiked(wasLiked);
+      setLikeCount((c) => wasLiked ? c + 1 : Math.max(0, c - 1));
     }
-    setLikeLoading(false);
   }
 
   async function toggleComments() {
@@ -127,7 +129,7 @@ export function PostCard({ post: initial, currentUserId, isAdmin, onDelete }: Po
 
       {/* Images */}
       {initial.image_urls.length > 0 && (
-        <div className={`grid gap-2 mb-3 ${initial.image_urls.length === 1 ? "grid-cols-1" : initial.image_urls.length === 2 ? "grid-cols-2" : "grid-cols-2"}`}>
+        <div className={`grid gap-2 mb-3 ${initial.image_urls.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
           {initial.image_urls.slice(0, 4).map((url, i) => (
             <div key={i} className="relative aspect-square rounded-lg overflow-hidden bg-muted">
               <Image src={url} alt="" fill className="object-cover" sizes="(max-width: 768px) 50vw, 300px" />
@@ -140,10 +142,9 @@ export function PostCard({ post: initial, currentUserId, isAdmin, onDelete }: Po
       <div className="flex items-center gap-4 pt-2 border-t border-border">
         <button
           onClick={toggleLike}
-          disabled={likeLoading}
           className={`flex items-center gap-1.5 text-sm transition-colors ${liked ? "text-red-500" : "text-muted-foreground hover:text-red-500"}`}
         >
-          {likeLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Heart className={`h-4 w-4 ${liked ? "fill-red-500" : ""}`} />}
+          <Heart className={`h-4 w-4 ${liked ? "fill-red-500" : ""}`} />
           <span>{likeCount}</span>
         </button>
         <button
@@ -151,7 +152,7 @@ export function PostCard({ post: initial, currentUserId, isAdmin, onDelete }: Po
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-navy transition-colors"
         >
           {loadingComments ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
-          <span>{initial.comment_count}</span>
+          <span>{commentCount}</span>
           {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
         </button>
       </div>
@@ -163,6 +164,7 @@ export function PostCard({ post: initial, currentUserId, isAdmin, onDelete }: Po
           initialComments={comments}
           currentUserId={currentUserId}
           isAdmin={isAdmin}
+          onCountChange={(delta) => setCommentCount((c) => Math.max(0, c + delta))}
         />
       )}
     </div>

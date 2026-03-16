@@ -8,7 +8,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const { data: comments, error } = await (admin as any)
     .from("feed_comments")
-    .select(`id, body, created_at, profiles:user_id (id, username, display_name, avatar_url)`)
+    .select(`id, body, created_at, parent_id, profiles:user_id (id, username, display_name, avatar_url)`)
     .eq("post_id", postId)
     .order("created_at", { ascending: true });
 
@@ -22,21 +22,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { body } = await req.json();
+  const { body, parent_id } = await req.json();
   if (!body?.trim()) return NextResponse.json({ error: "Body is required" }, { status: 400 });
 
   const admin = createAdminClient();
   const { data: comment, error } = await (admin as any)
     .from("feed_comments")
-    .insert({ post_id: postId, user_id: user.id, body: body.trim() })
-    .select(`id, body, created_at, profiles:user_id (id, username, display_name, avatar_url)`)
+    .insert({ post_id: postId, user_id: user.id, body: body.trim(), parent_id: parent_id ?? null })
+    .select(`id, body, created_at, parent_id, profiles:user_id (id, username, display_name, avatar_url)`)
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Increment comment_count
-  const { data: post } = await (admin as any).from("feed_posts").select("comment_count").eq("id", postId).single();
-  await (admin as any).from("feed_posts").update({ comment_count: ((post as any)?.comment_count ?? 0) + 1 }).eq("id", postId);
+  // Only increment comment_count for top-level comments
+  if (!parent_id) {
+    const { data: post } = await (admin as any).from("feed_posts").select("comment_count").eq("id", postId).single();
+    await (admin as any).from("feed_posts").update({ comment_count: ((post as any)?.comment_count ?? 0) + 1 }).eq("id", postId);
+  }
 
   return NextResponse.json({ comment }, { status: 201 });
 }
@@ -52,7 +54,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const admin = createAdminClient();
-  const { data: comment } = await (admin as any).from("feed_comments").select("user_id").eq("id", commentId).single();
+  const { data: comment } = await (admin as any).from("feed_comments").select("user_id, parent_id").eq("id", commentId).single();
   if (!comment) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const { data: profile } = await admin.from("profiles").select("is_admin").eq("id", user.id).single();
@@ -60,11 +62,14 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Deleting cascades to replies via DB foreign key
   await (admin as any).from("feed_comments").delete().eq("id", commentId);
 
-  // Decrement comment_count
-  const { data: post } = await (admin as any).from("feed_posts").select("comment_count").eq("id", postId).single();
-  await (admin as any).from("feed_posts").update({ comment_count: Math.max(0, ((post as any)?.comment_count ?? 1) - 1) }).eq("id", postId);
+  // Only decrement for top-level comment deletions
+  if (!comment.parent_id) {
+    const { data: post } = await (admin as any).from("feed_posts").select("comment_count").eq("id", postId).single();
+    await (admin as any).from("feed_posts").update({ comment_count: Math.max(0, ((post as any)?.comment_count ?? 1) - 1) }).eq("id", postId);
+  }
 
   return NextResponse.json({ deleted: true });
 }

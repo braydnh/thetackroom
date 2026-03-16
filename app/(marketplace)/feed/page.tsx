@@ -126,6 +126,7 @@ export default async function FeedPage({
       )}
 
       <FeedClient
+        key={`${view}-${topic}`}
         initialPosts={enriched}
         currentUserId={user?.id ?? null}
         isAdmin={isAdmin}
