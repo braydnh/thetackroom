@@ -50,6 +50,7 @@ interface OrderDetail {
   shipping_city: string | null;
   shipping_state: string | null;
   shipping_postcode: string | null;
+  dispute_reason: string | null;
 }
 
 const STATUS_STEPS_SHIPPING = [
@@ -356,6 +357,14 @@ export default function OrderDetailPage() {
         </div>
         <StatusBadge status={order.status} />
       </div>
+
+      {/* Dispute reason */}
+      {order.status === "disputed" && order.dispute_reason && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 mb-6">
+          <p className="text-xs font-semibold text-red-700 uppercase tracking-wide mb-1">Dispute reason</p>
+          <p className="text-sm text-red-800">{order.dispute_reason}</p>
+        </div>
+      )}
 
       {/* Progress tracker */}
       {!TERMINAL_STATUSES.has(order.status) && order.status !== "pending_payment" && (
