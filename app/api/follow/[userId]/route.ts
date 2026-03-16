@@ -51,6 +51,22 @@ export async function POST(_req: Request, { params }: { params: Promise<{ userId
     return NextResponse.json({ isFollowing: false });
   } else {
     await (admin as any).from("follows").insert({ follower_id: user.id, following_id: userId });
+
+    // Notify the person being followed
+    const { data: followerProfile } = await (admin as any)
+      .from("profiles")
+      .select("username, display_name")
+      .eq("id", user.id)
+      .single();
+    const name = followerProfile?.display_name ?? followerProfile?.username ?? "Someone";
+    await (admin as any).from("notifications").insert({
+      user_id: userId,
+      type: "new_follower",
+      title: "New follower!",
+      body: `${name} started following you.`,
+      link: `/profile/${followerProfile?.username}`,
+    });
+
     return NextResponse.json({ isFollowing: true });
   }
 }
