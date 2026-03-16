@@ -72,7 +72,9 @@ export function PostCard({ post: initial, currentUserId, isAdmin, onDelete }: Po
       setLoadingComments(true);
       const res = await fetch(`/api/feed/posts/${initial.id}/comments`);
       const data = await res.json();
-      setComments(data.comments ?? []);
+      const loaded = data.comments ?? [];
+      setComments(loaded);
+      setCommentCount(loaded.length);
       setLoadingComments(false);
     }
     setExpanded((v) => !v);

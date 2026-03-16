@@ -70,6 +70,10 @@ export function FeedClient({ initialPosts, currentUserId, isAdmin, topic, view, 
 
   return (
     <>
+      <p className="text-xs text-muted-foreground mb-3">
+        🐴 Keep it community — no advertisements or spam allowed.
+      </p>
+
       {currentUserId && view !== "following" && (
         <NewPostForm userId={currentUserId} onPost={handlePost} />
       )}
@@ -108,9 +112,6 @@ export function FeedClient({ initialPosts, currentUserId, isAdmin, topic, view, 
         </div>
       )}
 
-      <p className="text-center text-xs text-muted-foreground mt-6">
-        🐴 Keep it community — no advertisements or spam allowed.
-      </p>
     </>
   );
 }
