@@ -469,6 +469,11 @@ export function Navbar({ user, unreadMessages = 0, unreadNotifications = 0 }: Na
             Sell with Us
           </Link>
 
+          {/* Feed Room */}
+          <Link href="/feed" className="rounded-md px-3 py-2 text-sm font-medium text-navy hover:bg-muted transition-colors">
+            Feed Room
+          </Link>
+
           {/* About */}
           <Link href="/about" className="rounded-md px-3 py-2 text-sm font-medium text-navy hover:bg-muted transition-colors">
             About
