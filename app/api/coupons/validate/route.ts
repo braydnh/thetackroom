@@ -23,7 +23,7 @@ export async function GET(req: Request) {
   const { data: coupon } = await admin
     .from("coupon_codes")
     .select("id, code, discount_type, discount_value, max_uses, uses_count, expires_at, is_active")
-    .filter("upper(code)", "eq", code.toUpperCase())
+    .eq("code", code.toUpperCase())
     .maybeSingle();
 
   if (!coupon || !coupon.is_active) {
