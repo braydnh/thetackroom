@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerClient } from "@/lib/supabase/server";
+import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -11,7 +11,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   const admin = createAdminClient();
 
   // Check if already liked
-  const { data: existing } = await admin
+  const { data: existing } = await (admin as any)
     .from("feed_likes")
     .select("post_id")
     .eq("user_id", user.id)
@@ -20,15 +20,15 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
   if (existing) {
     // Unlike — remove like and decrement count
-    await admin.from("feed_likes").delete().eq("user_id", user.id).eq("post_id", postId);
-    const { data: post } = await admin.from("feed_posts").select("like_count").eq("id", postId).single();
-    await admin.from("feed_posts").update({ like_count: Math.max(0, ((post as any)?.like_count ?? 1) - 1) }).eq("id", postId);
+    await (admin as any).from("feed_likes").delete().eq("user_id", user.id).eq("post_id", postId);
+    const { data: post } = await (admin as any).from("feed_posts").select("like_count").eq("id", postId).single();
+    await (admin as any).from("feed_posts").update({ like_count: Math.max(0, ((post as any)?.like_count ?? 1) - 1) }).eq("id", postId);
     return NextResponse.json({ liked: false });
   } else {
     // Like — insert and increment count
-    await admin.from("feed_likes").insert({ user_id: user.id, post_id: postId });
-    const { data: post } = await admin.from("feed_posts").select("like_count").eq("id", postId).single();
-    await admin.from("feed_posts").update({ like_count: ((post as any)?.like_count ?? 0) + 1 }).eq("id", postId);
+    await (admin as any).from("feed_likes").insert({ user_id: user.id, post_id: postId });
+    const { data: post } = await (admin as any).from("feed_posts").select("like_count").eq("id", postId).single();
+    await (admin as any).from("feed_posts").update({ like_count: ((post as any)?.like_count ?? 0) + 1 }).eq("id", postId);
     return NextResponse.json({ liked: true });
   }
 }

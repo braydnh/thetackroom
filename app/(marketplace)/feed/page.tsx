@@ -47,7 +47,7 @@ export default async function FeedPage({
   // Fetch user's likes
   let likedIds = new Set<string>();
   if (user && posts?.length) {
-    const { data: likes } = await admin
+    const { data: likes } = await (admin as any)
       .from("feed_likes")
       .select("post_id")
       .eq("user_id", user.id)
