@@ -42,7 +42,8 @@ export async function GET(
       shipping_address_line2,
       shipping_city,
       shipping_state,
-      shipping_postcode
+      shipping_postcode,
+      dispute_reason
     `)
     .eq("id", id)
     .single() as any);
