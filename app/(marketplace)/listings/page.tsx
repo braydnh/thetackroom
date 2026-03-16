@@ -9,6 +9,7 @@ import { ListingGrid } from "@/components/listings/ListingGrid";
 import { ListingsSearchBar } from "@/components/listings/ListingsSearchBar";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { FeaturedListings } from "@/components/listings/FeaturedListings";
 import type { ListingCardData } from "@/components/listings/ListingCard";
 import type { ListingCondition, ListingCategory } from "@/types/database.types";
@@ -38,9 +39,11 @@ interface SearchParams {
   max?: string;
   sort?: string;
   page?: string;
+  view?: string;
 }
 
 function buildTitle(params: SearchParams): string {
+  if (params.view === "following") return "Following";
   if (params.q) return `"${params.q}"`;
   if (params.category === "horse") return "Horse";
   if (params.category === "rider") return "Rider";
@@ -55,11 +58,14 @@ export default async function ListingsPage({
 }) {
   const params = await searchParams;
 
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   // Fetch featured listing IDs so we can exclude them from the regular grid
   let featuredIds: string[] = [];
-  const showFeatured = !params.q && !params.condition && !params.min && !params.max;
+  const showFeatured = !params.q && !params.condition && !params.min && !params.max && params.view !== "following";
   if (showFeatured) {
-    const supabase = await createClient();
+    {
     const now = new Date().toISOString();
     const { data: featuredRows } = await supabase
       .from("featured_listings")
@@ -69,6 +75,7 @@ export default async function ListingsPage({
       .gt("ends_at", now)
       .limit(4);
     featuredIds = featuredRows?.map((r: any) => r.listing_id as string) ?? [];
+    }
   }
 
   return (
@@ -77,9 +84,23 @@ export default async function ListingsPage({
       <div className="border-b border-border bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="flex gap-2 overflow-x-auto scrollbar-hide py-3">
+            {user && (
+              <Link
+                href="/listings?view=following"
+                className={`flex-shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${
+                  params.view === "following"
+                    ? "bg-olive text-cream border-olive"
+                    : "bg-white text-navy border-border hover:bg-olive hover:text-cream hover:border-olive"
+                }`}
+              >
+                Following
+              </Link>
+            )}
             {CATEGORY_PILLS.map((pill) => {
               const isActive =
-                pill.href === "/listings"
+                params.view === "following"
+                  ? false
+                  : pill.href === "/listings"
                   ? !params.category && !params.sub && !params.max
                   : pill.href === "/listings?max=100"
                   ? params.max === "100" && !params.category
@@ -122,7 +143,7 @@ export default async function ListingsPage({
           >
             {buildTitle(params)}
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Pre-loved equestrian gear</p>
+          <p className="text-sm text-muted-foreground mt-0.5">{params.view === "following" ? "Listings from sellers you follow" : "Pre-loved equestrian gear"}</p>
         </div>
         {/* Sort */}
         <div className="hidden sm:flex items-center gap-2">
@@ -199,14 +220,15 @@ function applySort(query: any, params: SearchParams) {
   return query.order("created_at", { ascending: false });
 }
 
-function buildQuery(supabase: any, params: SearchParams, excludeIds: string[]) {
-  const query = supabase
+function buildQuery(supabase: any, params: SearchParams, excludeIds: string[], followedIds?: string[]) {
+  let query = supabase
     .from("listings")
     .select(
       `id, title, price, condition, brand, size, allows_pickup, primary_image_url,
        profiles!seller_id(username, avatar_url, is_founding_seller, is_ambassador)`
     )
     .eq("status", "active");
+  if (followedIds) query = query.in("seller_id", followedIds);
   return applySort(applyFilters(query, params, excludeIds), params);
 }
 
@@ -225,6 +247,7 @@ function buildPageUrl(params: SearchParams, page: number): string {
   if (params.min) p.set("min", params.min);
   if (params.max) p.set("max", params.max);
   if (params.sort) p.set("sort", params.sort);
+  if (params.view) p.set("view", params.view);
   if (page > 1) p.set("page", String(page));
   const qs = p.toString();
   return `/listings${qs ? `?${qs}` : ""}`;
@@ -235,14 +258,29 @@ async function ListingsContent({ params, excludeIds = [] }: { params: SearchPara
   const page = Math.max(1, parseInt(params.page ?? "1", 10));
   const offset = (page - 1) * PAGE_SIZE;
 
+  // Following filter — get seller IDs the current user follows
+  let followedIds: string[] | undefined;
+  if (params.view === "following") {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const admin = createAdminClient();
+      const { data: follows } = await (admin as any).from("follows").select("following_id").eq("follower_id", user.id);
+      followedIds = (follows ?? []).map((f: any) => f.following_id);
+    }
+    if (!followedIds || followedIds.length === 0) {
+      return <ListingGrid listings={[]} emptyMessage="Follow some sellers to see their listings here." />;
+    }
+  }
+
   // Build count query separately (no join needed — avoids silent failure from chained .select())
   function buildCountQuery(sb: any) {
     let q = sb.from("listings").select("id", { count: "exact", head: true }).eq("status", "active");
+    if (followedIds) q = q.in("seller_id", followedIds);
     return applyFilters(q, params, excludeIds);
   }
 
   const [{ data: rows }, { count }] = await Promise.all([
-    buildQuery(supabase, params, excludeIds).range(offset, offset + PAGE_SIZE - 1),
+    buildQuery(supabase, params, excludeIds, followedIds).range(offset, offset + PAGE_SIZE - 1),
     buildCountQuery(supabase),
   ]);
 
