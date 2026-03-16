@@ -9,6 +9,7 @@ import { Star, Package, ShoppingBag, Pencil } from "lucide-react";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { Button } from "@/components/ui/button";
 import { BundleOfferButton } from "./BundleOfferButton";
+import { FollowButton } from "./FollowButton";
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username } = await params;
@@ -42,6 +43,18 @@ export default async function SellerProfilePage({
 
   const { data: { user: currentUser } } = await supabase.auth.getUser();
   const isOwnProfile = currentUser?.id === (profile as any).id;
+
+  // Fetch follow data
+  const [{ count: followerCount }, { count: followingCount }] = await Promise.all([
+    (admin as any).from("follows").select("*", { count: "exact", head: true }).eq("following_id", (profile as any).id),
+    (admin as any).from("follows").select("*", { count: "exact", head: true }).eq("follower_id", (profile as any).id),
+  ]);
+  let isFollowing = false;
+  if (currentUser && !isOwnProfile) {
+    const { data: followRow } = await (admin as any)
+      .from("follows").select("follower_id").eq("follower_id", currentUser.id).eq("following_id", (profile as any).id).single();
+    isFollowing = !!followRow;
+  }
 
   // Load active listings, sold listings, and recent reviews in parallel
   const [{ data: listings }, { data: soldListings }, { data: reviews }] = await Promise.all([
@@ -115,11 +128,18 @@ export default async function SellerProfilePage({
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               {!isOwnProfile && (
-                <BundleOfferButton
-                  sellerId={(profile as any).id}
-                  sellerUsername={(profile as any).username}
-                  currentUserId={currentUser?.id ?? null}
-                />
+                <>
+                  <FollowButton
+                    userId={(profile as any).id}
+                    initialIsFollowing={isFollowing}
+                    initialFollowerCount={followerCount ?? 0}
+                  />
+                  <BundleOfferButton
+                    sellerId={(profile as any).id}
+                    sellerUsername={(profile as any).username}
+                    currentUserId={currentUser?.id ?? null}
+                  />
+                </>
               )}
               {isOwnProfile && (
                 <Button size="sm" variant="outline" className="gap-1.5" asChild>
@@ -142,6 +162,8 @@ export default async function SellerProfilePage({
               <ShoppingBag className="h-4 w-4" />
               <span><strong className="text-navy">{(profile as any).total_sales}</strong> sales</span>
             </div>
+            <span><strong className="text-navy">{followerCount ?? 0}</strong> followers</span>
+            <span><strong className="text-navy">{followingCount ?? 0}</strong> following</span>
             {(profile as any).average_rating && (
               <div className="flex items-center gap-1.5">
                 <Star className="h-4 w-4 text-amber-400 fill-amber-400" />

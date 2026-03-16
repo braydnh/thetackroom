@@ -1,7 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { Rss } from "lucide-react";
 import { FeedClient } from "./FeedClient";
 
 export const dynamic = "force-dynamic";
@@ -18,9 +17,9 @@ const TOPIC_FILTERS = [
 export default async function FeedPage({
   searchParams,
 }: {
-  searchParams: Promise<{ topic?: string }>;
+  searchParams: Promise<{ topic?: string; view?: string }>;
 }) {
-  const { topic = "all" } = await searchParams;
+  const { topic = "all", view = "all" } = await searchParams;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -33,20 +32,38 @@ export default async function FeedPage({
     isAdmin = (profile as any)?.role === "admin";
   }
 
-  // Initial posts fetch
+  // If "following" view, get followed user IDs first
+  let followedIds: string[] = [];
+  if (view === "following" && user) {
+    const { data: follows } = await (admin as any)
+      .from("follows")
+      .select("following_id")
+      .eq("follower_id", user.id);
+    followedIds = (follows ?? []).map((f: any) => f.following_id);
+  }
+
+  // Build posts query
   let query = (admin as any)
     .from("feed_posts")
     .select("id, body, topic, image_urls, like_count, comment_count, created_at, profiles:user_id(id, username, display_name, avatar_url)")
     .order("created_at", { ascending: false })
     .limit(20);
 
-  if (topic !== "all") query = (query as any).eq("topic", topic);
+  if (view === "following") {
+    if (followedIds.length === 0) {
+      query = null; // no one followed yet
+    } else {
+      query = query.in("user_id", followedIds);
+    }
+  } else if (topic !== "all") {
+    query = query.eq("topic", topic);
+  }
 
-  const { data: posts } = await (query as any);
+  const posts = query ? (await query).data : [];
 
   // Fetch user's likes
   let likedIds = new Set<string>();
-  if (user && posts?.length) {
+  if (user && (posts ?? []).length > 0) {
     const { data: likes } = await (admin as any)
       .from("feed_likes")
       .select("post_id")
@@ -69,26 +86,52 @@ export default async function FeedPage({
         </p>
       </div>
 
-      {/* Topic filter pills */}
-      <div className="flex gap-1.5 flex-wrap mb-6">
-        {TOPIC_FILTERS.map((f) => (
+      {/* All / Following tabs */}
+      <div className="flex gap-1 border-b border-border mb-5">
+        <Link
+          href="/feed"
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
+            view !== "following" ? "border-olive text-olive" : "border-transparent text-muted-foreground hover:text-navy"
+          }`}
+        >
+          All
+        </Link>
+        {user && (
           <Link
-            key={f.value}
-            href={f.value === "all" ? "/feed" : `/feed?topic=${f.value}`}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-              topic === f.value ? "bg-olive text-cream" : "bg-muted text-muted-foreground hover:bg-muted/80"
+            href="/feed?view=following"
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              view === "following" ? "border-olive text-olive" : "border-transparent text-muted-foreground hover:text-navy"
             }`}
           >
-            {f.label}
+            Following
           </Link>
-        ))}
+        )}
       </div>
+
+      {/* Topic filter pills — only on All tab */}
+      {view !== "following" && (
+        <div className="flex gap-1.5 flex-wrap mb-6">
+          {TOPIC_FILTERS.map((f) => (
+            <Link
+              key={f.value}
+              href={f.value === "all" ? "/feed" : `/feed?topic=${f.value}`}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                topic === f.value ? "bg-olive text-cream" : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              {f.label}
+            </Link>
+          ))}
+        </div>
+      )}
 
       <FeedClient
         initialPosts={enriched}
         currentUserId={user?.id ?? null}
         isAdmin={isAdmin}
         topic={topic}
+        view={view}
+        isLoggedIn={!!user}
       />
     </div>
   );

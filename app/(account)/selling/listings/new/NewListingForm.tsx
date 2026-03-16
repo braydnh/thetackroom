@@ -178,6 +178,9 @@ export default function NewListingForm({ commissionPct = 5 }: { commissionPct?: 
         .eq("id", listing.id);
       if (activateError) throw new Error(activateError.message);
 
+      // Notify followers (fire and forget — non-blocking)
+      fetch(`/api/listings/${listing.id}/notify-followers`, { method: "POST" }).catch(() => {});
+
       toast.success("Listing published!");
       router.push(`/selling/boost/${listing.id}?new=true`);
     } catch (err: any) {
