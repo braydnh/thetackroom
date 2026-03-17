@@ -36,7 +36,7 @@ export default function ContactPage() {
       if (!res.ok) throw new Error();
       setSent(true);
     } catch {
-      toast.error("Failed to send — please email us directly at contact@tackroomshop.com.au");
+      toast.error("Failed to send — please email us directly at support@tackroomshop.com.au");
     } finally {
       setLoading(false);
     }
@@ -105,8 +105,8 @@ export default function ContactPage() {
         <div className="space-y-5">
           <div>
             <h3 className="text-sm font-semibold text-navy mb-2">Email</h3>
-            <a href="mailto:contact@tackroomshop.com.au" className="flex items-center gap-2 text-sm text-olive hover:underline">
-              <Mail className="h-4 w-4" /> contact@tackroomshop.com.au
+            <a href="mailto:support@tackroomshop.com.au" className="flex items-center gap-2 text-sm text-olive hover:underline">
+              <Mail className="h-4 w-4" /> support@tackroomshop.com.au
             </a>
           </div>
           <div>
