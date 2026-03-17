@@ -18,7 +18,7 @@
  */
 
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
+import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/resend";
 import {
@@ -34,7 +34,6 @@ import {
 import { formatAUD } from "@/lib/utils/currency";
 import { poll17TrackStatus } from "@/lib/17track";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01-28.clover" });
 
 export async function GET(req: Request) {
   // Verify cron secret — always required; missing secret is a misconfiguration
@@ -80,7 +79,7 @@ export async function GET(req: Request) {
       // Find the charge ID if not stored (look up via payment intent)
       let chargeId = (order as any).stripe_charge_id as string | null;
       if (!chargeId && (order as any).stripe_payment_intent_id) {
-        const pi = await stripe.paymentIntents.retrieve((order as any).stripe_payment_intent_id);
+        const pi = await getStripe().paymentIntents.retrieve((order as any).stripe_payment_intent_id);
         chargeId = typeof pi.latest_charge === "string" ? pi.latest_charge : null;
         if (chargeId) {
           await admin.from("orders").update({ stripe_charge_id: chargeId }).eq("id", order.id);
@@ -90,7 +89,7 @@ export async function GET(req: Request) {
       if (!chargeId) throw new Error("No charge ID found");
 
       // Create Stripe Transfer — platform → seller connected account
-      const transfer = await stripe.transfers.create({
+      const transfer = await getStripe().transfers.create({
         amount: order.seller_payout_amt,
         currency: "aud",
         destination: profile.stripe_account_id,
@@ -362,7 +361,7 @@ export async function GET(req: Request) {
       // Void the PaymentIntent in Stripe so it can't be completed later
       if ((order as any).stripe_payment_intent_id) {
         try {
-          await stripe.paymentIntents.cancel((order as any).stripe_payment_intent_id);
+          await getStripe().paymentIntents.cancel((order as any).stripe_payment_intent_id);
         } catch {
           // Already cancelled/succeeded — ignore
         }

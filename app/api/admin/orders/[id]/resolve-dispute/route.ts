@@ -7,12 +7,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import Stripe from "stripe";
+import { getStripe } from "@/lib/stripe";
 import { sendEmail } from "@/lib/resend";
 import { disputeRefundBuyerEmail, disputeRefundSellerEmail, disputeReleasedSellerEmail } from "@/lib/emails";
 import { formatAUD } from "@/lib/utils/currency";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01-28.clover" });
 
 export async function POST(
   req: Request,
@@ -52,11 +51,11 @@ export async function POST(
     const pi = (order as any).stripe_payment_intent_id as string;
     if (!pi) return NextResponse.json({ error: "No payment intent" }, { status: 400 });
 
-    const piObj = await stripe.paymentIntents.retrieve(pi);
+    const piObj = await getStripe().paymentIntents.retrieve(pi);
     const chargeId = typeof piObj.latest_charge === "string" ? piObj.latest_charge : null;
     if (!chargeId) return NextResponse.json({ error: "No charge found" }, { status: 400 });
 
-    const refund = await stripe.refunds.create({ charge: chargeId, reason: "fraudulent" });
+    const refund = await getStripe().refunds.create({ charge: chargeId, reason: "fraudulent" });
 
     await admin.from("orders").update({
       status: "refunded",
@@ -116,13 +115,13 @@ export async function POST(
 
     let chargeId = (order as any).stripe_charge_id as string | null;
     if (!chargeId && (order as any).stripe_payment_intent_id) {
-      const pi = await stripe.paymentIntents.retrieve((order as any).stripe_payment_intent_id);
+      const pi = await getStripe().paymentIntents.retrieve((order as any).stripe_payment_intent_id);
       chargeId = typeof pi.latest_charge === "string" ? pi.latest_charge : null;
     }
 
     if (!chargeId) return NextResponse.json({ error: "No charge found" }, { status: 400 });
 
-    const transfer = await stripe.transfers.create({
+    const transfer = await getStripe().transfers.create({
       amount: (order as any).seller_payout_amt,
       currency: "aud",
       destination: sellerProfile.stripe_account_id,

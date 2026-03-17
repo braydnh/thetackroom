@@ -12,9 +12,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/resend";
 import { newOrderEmail, orderConfirmedBuyerEmail } from "@/lib/emails";
 import { formatAUD } from "@/lib/utils/currency";
-import Stripe from "stripe";
+import { getStripe } from "@/lib/stripe";
+import type Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01-28.clover" });
 
 export async function POST(
   _req: Request,
@@ -54,14 +54,14 @@ export async function POST(
 
   let pi: Stripe.PaymentIntent;
   try {
-    pi = await stripe.paymentIntents.retrieve(piId);
+    pi = await getStripe().paymentIntents.retrieve(piId);
   } catch {
     return NextResponse.json({ error: "Could not retrieve PaymentIntent from Stripe" }, { status: 500 });
   }
 
   // If payment was never completed, cancel the order and void the intent
   if (pi.status !== "succeeded") {
-    try { await stripe.paymentIntents.cancel(piId); } catch { /* already cancelled */ }
+    try { await getStripe().paymentIntents.cancel(piId); } catch { /* already cancelled */ }
     await admin.from("orders").update({ status: "cancelled" }).eq("id", orderId);
     return NextResponse.json({ success: true, newStatus: "cancelled", detail: `PaymentIntent was ${pi.status}` });
   }

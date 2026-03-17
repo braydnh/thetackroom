@@ -8,9 +8,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import Stripe from "stripe";
+import { getStripe } from "@/lib/stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01-28.clover" });
 
 export async function POST() {
   try {
@@ -31,7 +30,7 @@ export async function POST() {
 
     // If already fully onboarded, generate a login link to the Express dashboard
     if (profile.stripe_onboarding_complete && profile.stripe_account_id) {
-      const loginLink = await stripe.accounts.createLoginLink(profile.stripe_account_id);
+      const loginLink = await getStripe().accounts.createLoginLink(profile.stripe_account_id);
       return NextResponse.json({ url: loginLink.url });
     }
 
@@ -39,7 +38,7 @@ export async function POST() {
 
     // Create a new Express account if one doesn't exist
     if (!accountId) {
-      const account = await stripe.accounts.create({
+      const account = await getStripe().accounts.create({
         type: "express",
         country: "AU",
         capabilities: {
@@ -62,7 +61,7 @@ export async function POST() {
       ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
     // Create an Account Link for the onboarding flow
-    const accountLink = await stripe.accountLinks.create({
+    const accountLink = await getStripe().accountLinks.create({
       account: accountId,
       refresh_url: `${origin}/selling/onboarding?refresh=true`,
       return_url:  `${origin}/api/stripe/connect-return`,

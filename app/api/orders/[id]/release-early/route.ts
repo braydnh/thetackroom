@@ -10,12 +10,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import Stripe from "stripe";
+import { getStripe } from "@/lib/stripe";
 import { sendEmail } from "@/lib/resend";
 import { payoutReleasedSellerEmail } from "@/lib/emails";
 import { formatAUD } from "@/lib/utils/currency";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01-28.clover" });
 
 export async function POST(
   _req: Request,
@@ -55,7 +54,7 @@ export async function POST(
   // Resolve charge ID
   let chargeId = (order as any).stripe_charge_id as string | null;
   if (!chargeId && (order as any).stripe_payment_intent_id) {
-    const pi = await stripe.paymentIntents.retrieve((order as any).stripe_payment_intent_id);
+    const pi = await getStripe().paymentIntents.retrieve((order as any).stripe_payment_intent_id);
     chargeId = typeof pi.latest_charge === "string" ? pi.latest_charge : null;
     if (chargeId) {
       await admin.from("orders").update({ stripe_charge_id: chargeId }).eq("id", id);
@@ -67,7 +66,7 @@ export async function POST(
   }
 
   // Create immediate Stripe Transfer
-  const transfer = await stripe.transfers.create({
+  const transfer = await getStripe().transfers.create({
     amount: (order as any).seller_payout_amt,
     currency: "aud",
     destination: sellerProfile.stripe_account_id,

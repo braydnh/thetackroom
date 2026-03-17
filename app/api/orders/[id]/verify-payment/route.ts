@@ -15,9 +15,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/resend";
 import { newOrderEmail, orderConfirmedBuyerEmail } from "@/lib/emails";
 import { formatAUD } from "@/lib/utils/currency";
-import Stripe from "stripe";
+import { getStripe } from "@/lib/stripe";
+import type Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01-28.clover" });
 
 export async function POST(
   _req: Request,
@@ -52,7 +52,7 @@ export async function POST(
   // Check with Stripe
   let pi: Stripe.PaymentIntent;
   try {
-    pi = await stripe.paymentIntents.retrieve(piId);
+    pi = await getStripe().paymentIntents.retrieve(piId);
   } catch {
     return NextResponse.json({ status: "pending_payment" });
   }

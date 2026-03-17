@@ -8,13 +8,13 @@
  */
 
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
+import { getStripe } from "@/lib/stripe";
+import type Stripe from "stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/resend";
 import { newOrderEmail, orderConfirmedBuyerEmail, stripeOnboardingCompleteEmail, boostPurchasedEmail } from "@/lib/emails";
 import { formatAUD } from "@/lib/utils/currency";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01-28.clover" });
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
   for (const secret of secrets) {
     try {
-      event = stripe.webhooks.constructEvent(body, sig, secret);
+      event = getStripe().webhooks.constructEvent(body, sig, secret);
       break;
     } catch {
       // try next secret

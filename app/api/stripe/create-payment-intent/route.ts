@@ -12,10 +12,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import Stripe from "stripe";
+import { getStripe } from "@/lib/stripe";
 import { calculateSellerPayout } from "@/lib/utils/currency";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01-28.clover" });
 
 export async function POST(req: Request) {
   try {
@@ -146,7 +145,7 @@ export async function POST(req: Request) {
 
     if (existingOrder?.stripe_payment_intent_id) {
       try {
-        const existingPi = await stripe.paymentIntents.retrieve(existingOrder.stripe_payment_intent_id);
+        const existingPi = await getStripe().paymentIntents.retrieve(existingOrder.stripe_payment_intent_id);
         if (["requires_payment_method", "requires_confirmation", "requires_action"].includes(existingPi.status)) {
           return NextResponse.json({
             client_secret: existingPi.client_secret,
@@ -204,7 +203,7 @@ export async function POST(req: Request) {
     }
 
     // Create Stripe PaymentIntent — captured immediately to PLATFORM account
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await getStripe().paymentIntents.create({
       amount: totalAmount,
       currency: "aud",
       automatic_payment_methods: { enabled: true },

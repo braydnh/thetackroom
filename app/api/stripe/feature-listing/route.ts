@@ -10,9 +10,8 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import Stripe from "stripe";
+import { getStripe } from "@/lib/stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01-28.clover" });
 
 const PRICING: Record<string, Record<number, number>> = {
   homepage:    { 7: 499, 14: 899 },
@@ -57,7 +56,7 @@ export async function POST(req: Request) {
 
     const ends_at = new Date(Date.now() + duration_days * 24 * 60 * 60 * 1000).toISOString();
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await getStripe().paymentIntents.create({
       amount,
       currency: "aud",
       automatic_payment_methods: { enabled: true },

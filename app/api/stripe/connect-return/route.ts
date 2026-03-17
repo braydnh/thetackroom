@@ -9,9 +9,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import Stripe from "stripe";
+import { getStripe } from "@/lib/stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01-28.clover" });
 
 export async function GET() {
   const supabase = await createClient();
@@ -28,7 +27,7 @@ export async function GET() {
     .single();
 
   if (profile?.stripe_account_id) {
-    const account = await stripe.accounts.retrieve(profile.stripe_account_id);
+    const account = await getStripe().accounts.retrieve(profile.stripe_account_id);
     if (account.charges_enabled && account.payouts_enabled) {
       await admin
         .from("profiles")
